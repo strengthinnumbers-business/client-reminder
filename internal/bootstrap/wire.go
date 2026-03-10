@@ -1,0 +1,46 @@
+package bootstrap
+
+import (
+	"fmt"
+	"os"
+
+	clientjson "github.com/strengthinnumbers-business/client-reminder/internal/adapters/client/jsonfile"
+	completionjson "github.com/strengthinnumbers-business/client-reminder/internal/adapters/completion/jsonfile"
+	configenv "github.com/strengthinnumbers-business/client-reminder/internal/adapters/config/env"
+	emailsmtp "github.com/strengthinnumbers-business/client-reminder/internal/adapters/email/smtp"
+	"github.com/strengthinnumbers-business/client-reminder/internal/core/service"
+)
+
+func BuildServiceFromEnv() (*service.ReminderService, error) {
+	clientsPath := envOrDefault("CLIENTS_JSON_PATH", "configs/clients.json")
+	templatePath := os.Getenv("EMAIL_TEMPLATE_PATH")
+	completionStatePath := envOrDefault("COMPLETION_STATE_PATH", "state/completion-verdicts.json")
+
+	smtpHost := os.Getenv("SMTP_HOST")
+	smtpPort := envOrDefault("SMTP_PORT", "25")
+	smtpUsername := os.Getenv("SMTP_USERNAME")
+	smtpPassword := os.Getenv("SMTP_PASSWORD")
+	smtpFrom := os.Getenv("SMTP_FROM")
+
+	if smtpHost == "" {
+		return nil, fmt.Errorf("SMTP_HOST is required")
+	}
+	if smtpFrom == "" {
+		return nil, fmt.Errorf("SMTP_FROM is required")
+	}
+
+	emailSender := emailsmtp.New(smtpHost, smtpPort, smtpUsername, smtpPassword, smtpFrom)
+	clientRepo := clientjson.New(clientsPath)
+	config := configenv.New(templatePath)
+	completionDecider := completionjson.New(completionStatePath)
+
+	return service.NewReminderService(emailSender, clientRepo, config, completionDecider, nil), nil
+}
+
+func envOrDefault(key, fallback string) string {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback
+	}
+	return v
+}

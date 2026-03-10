@@ -1,0 +1,18 @@
+[
+  {
+    "ID": "customer-a",
+    "Name": "Acme Corp",
+    "PeriodType": 1,
+    "Sequence": [
+      0,
+      3,
+      5,
+      7
+    ],
+    "Region": "AB",
+    "Email": "ops@acme.example",
+    "Greeting": "Hello Acme Team,",
+    "FolderURL": "https://files.example.com/acme",
+    "UploadPrompt": "Please upload the latest monthly data exports."
+  }
+]

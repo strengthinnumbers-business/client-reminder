@@ -1,0 +1,11 @@
+{{Greeting}}
+
+This is your reminder for period {{PeriodID}}.
+
+{{UploadPrompt}}
+
+Shared folder: {{FolderURL}}
+
+Thanks,
+Client Reminder Bot
+Run date: {{RunDate}}
