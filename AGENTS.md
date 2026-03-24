@@ -12,13 +12,8 @@ Ports MUST STAY FREE of any adapter details at all times!
 
 I.e. the core package MUST NOT have any dependencies on any of the adapters or any of their implementation details, like any Go types that represent storage data in a format that is specific to the storage backend, like DB rows, etc., or API requests and responses of the email sending service, etc.
 
-The app uses the following ports:
+You can find all ports [here](./internal/core/ports).
 
-- [EmailSender](./context/ports/EmailSender.md)
-- [ClientRepository](./context/ports/ClientRepository.md)
-- [GlobalConfiguration](./context/ports/GlobalConfiguration.md)
-- [CompletionDecider](./context/ports/CompletionDecider.md)
+You can find all business entities [here](./internal/core/entities).
 
-The app uses the following business entity types:
-
-- [business entity types](./context/BUSINESS_ENTITY_TYPES.md)
+When building this app, please set the GOCACHE env var to point at the `./.gocache` sub-dir to avoid sandbox issues.
