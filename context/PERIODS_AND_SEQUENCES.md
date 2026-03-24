@@ -8,4 +8,6 @@
 
 - Sequence Day Offsets are only counted on business days that are not statutory holidays in the client's region.
 
+- Any other days (like weekend days or statutory holidays) do not have a valid Sequence Day Offset.
+
 - This app uses the https://raw.githubusercontent.com/pcraig3/hols/refs/heads/main/reference/Canada-Holidays-API.v1.yaml OpenAPI spec for the https://canada-holidays.ca/api API to find out which regions (provinces or territories) observe which statutory holidays. Please use this API with plenty of caching time, a default of 1 lookup per month is sufficient. 

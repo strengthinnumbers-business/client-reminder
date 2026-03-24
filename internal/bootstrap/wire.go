@@ -8,6 +8,7 @@ import (
 	completionjson "github.com/strengthinnumbers-business/client-reminder/internal/adapters/completion/jsonfile"
 	configenv "github.com/strengthinnumbers-business/client-reminder/internal/adapters/config/env"
 	emailsmtp "github.com/strengthinnumbers-business/client-reminder/internal/adapters/email/smtp"
+	holidaycanada "github.com/strengthinnumbers-business/client-reminder/internal/adapters/holiday/canadaholidaysapi"
 	"github.com/strengthinnumbers-business/client-reminder/internal/core/service"
 )
 
@@ -15,6 +16,7 @@ func BuildServiceFromEnv() (*service.ReminderService, error) {
 	clientsPath := envOrDefault("CLIENTS_JSON_PATH", "configs/clients.json")
 	templatePath := os.Getenv("EMAIL_TEMPLATE_PATH")
 	completionStatePath := envOrDefault("COMPLETION_STATE_PATH", "state/completion-verdicts.json")
+	holidayCacheDir := envOrDefault("HOLIDAY_CACHE_DIR", "state/holiday-cache")
 
 	smtpHost := os.Getenv("SMTP_HOST")
 	smtpPort := envOrDefault("SMTP_PORT", "25")
@@ -33,8 +35,9 @@ func BuildServiceFromEnv() (*service.ReminderService, error) {
 	clientRepo := clientjson.New(clientsPath)
 	config := configenv.New(templatePath)
 	completionDecider := completionjson.New(completionStatePath)
+	holidayChecker := holidaycanada.New(holidayCacheDir)
 
-	return service.NewReminderService(emailSender, clientRepo, config, completionDecider, nil), nil
+	return service.NewReminderService(emailSender, clientRepo, config, completionDecider, holidayChecker, nil), nil
 }
 
 func envOrDefault(key, fallback string) string {
