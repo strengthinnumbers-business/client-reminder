@@ -16,6 +16,7 @@ Hexagonal Go service that sends reminder emails to customers to upload recent da
 - `ClientRepository`
 - `GlobalConfiguration`
 - `CompletionDecider`
+- `HolidayChecker`
 
 ## Run locally
 
