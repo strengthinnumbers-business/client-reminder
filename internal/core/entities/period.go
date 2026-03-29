@@ -59,6 +59,72 @@ func CurrentPeriod(periodType PeriodType, now time.Time) Period {
 	}
 }
 
+func (p Period) FirstSequenceDay(region ClientRegion, holidays HolidayChecker) (time.Time, error) {
+	day := p.Start()
+	for day.Weekday() != time.Monday {
+		day = day.AddDate(0, 0, 1)
+	}
+
+	for {
+		if !isBusinessWeekday(day) {
+			day = day.AddDate(0, 0, 1)
+			continue
+		}
+
+		holiday, err := isHoliday(day, region, holidays)
+		if err != nil {
+			return time.Time{}, err
+		}
+		if !holiday {
+			return day, nil
+		}
+
+		day = day.AddDate(0, 0, 1)
+	}
+}
+
+func (p Period) SequenceDayOffsetAt(at time.Time, region ClientRegion, holidays HolidayChecker) (int, bool, error) {
+	currentDay := normalizeDate(at)
+	if !isBusinessWeekday(currentDay) {
+		return 0, false, nil
+	}
+
+	holiday, err := isHoliday(currentDay, region, holidays)
+	if err != nil {
+		return 0, false, err
+	}
+	if holiday {
+		return 0, false, nil
+	}
+
+	sequenceStart, err := p.FirstSequenceDay(region, holidays)
+	if err != nil {
+		return 0, false, err
+	}
+	if currentDay.Before(sequenceStart) {
+		return 0, false, nil
+	}
+
+	offset := 0
+	for day := sequenceStart; day.Before(currentDay); day = day.AddDate(0, 0, 1) {
+		if !isBusinessWeekday(day) {
+			continue
+		}
+
+		holiday, err := isHoliday(day, region, holidays)
+		if err != nil {
+			return 0, false, err
+		}
+		if holiday {
+			continue
+		}
+
+		offset++
+	}
+
+	return offset, true, nil
+}
+
 func isoWeekStart(year, isoWeek int) time.Time {
 	jan4 := time.Date(year, time.January, 4, 0, 0, 0, 0, time.UTC)
 	weekdayOffset := (int(jan4.Weekday()) + 6) % 7
