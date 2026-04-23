@@ -96,7 +96,7 @@ func (s *ReminderService) Run(ctx context.Context) (RunResult, error) {
 			continue
 		}
 
-		if verdict == entities.CompletionUndecided || verdict == entities.CompletionIncomplete {
+		if verdict == entities.CompletionIncomplete {
 			body := RenderEmailTemplate(template, client, match.Period, now)
 			if err := s.emailSender.SendEmail(client.Email, body); err != nil {
 				result.Failures++
@@ -108,6 +108,9 @@ func (s *ReminderService) Run(ctx context.Context) (RunResult, error) {
 			}
 		}
 
+		if verdict == entities.CompletionUndecided {
+			// TODO: postpone sending emails until we have a verdict.
+		}
 	}
 
 	return result, nil
