@@ -1,3 +1,9 @@
+Always update AGENTS.md with the latest learnings and emerging conventions. If sections in AGENTS.md become too big, refactor those sections into Markdown files in the `/context/` folder.
+
+Keep README.md at a high level overview, only. If README.md really needs details, then link to the relevant section(s) in AGENTS.md or the relevant files in `/context/`.
+
+---
+
 This is a Go app to send regular email reminders to clients / customers, reminding them to upload their recent data to a file folder shared on the internet.
 
 The app runs in a Docker container, once a day, scheduled via a cron job or similar. During that scheduled run, it checks it's current configuration and currently stored state, and depending on that, decides which emails to send to which recipient.
