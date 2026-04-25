@@ -23,3 +23,10 @@ You can find all ports [here](./internal/core/ports).
 You can find all business entities [here](./internal/core/entities).
 
 When building this app, please set the GOCACHE env var to point at the `./.gocache` sub-dir to avoid sandbox issues.
+
+Scheduling details and known edge cases are documented in:
+
+- [Periods and Sequences](./context/PERIODS_AND_SEQUENCES.md)
+- [Known Scheduling Edge Cases](./context/KNOWN_SCHEDULING_EDGE_CASES.md)
+
+Reminder scheduling uses per-email minimum business-day gaps in the `ReminderGaps` client field. Successful sends advance the sequence; failed sends are only logged for debugging. Missing completion verdicts mean `CompletionVerdictNotRequested`, so reminders continue until an upload triggers `CompletionUndecided`.

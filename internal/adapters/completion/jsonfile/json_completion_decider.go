@@ -32,7 +32,7 @@ func (d *CompletionDecider) IsCompleted(c entities.Client, p entities.Period) (e
 
 	v, ok := state[stateKey(c.ID, p.ID)]
 	if !ok {
-		return entities.CompletionUndecided, nil
+		return entities.CompletionVerdictNotRequested, nil
 	}
 
 	return v, nil
@@ -47,7 +47,7 @@ func (d *CompletionDecider) ResetCompletionVerdict(c entities.Client, p entities
 		return err
 	}
 
-	state[stateKey(c.ID, p.ID)] = entities.CompletionUndecided
+	state[stateKey(c.ID, p.ID)] = entities.CompletionVerdictNotRequested
 	if err := d.store(state); err != nil {
 		return err
 	}

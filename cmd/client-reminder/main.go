@@ -23,10 +23,11 @@ func main() {
 
 	fmt.Fprintf(
 		os.Stdout,
-		"run complete: total=%d sent=%d skipped_done=%d failures=%d\n",
+		"run complete: total=%d sent=%d skipped_done=%d missed_period_alerts=%d failures=%d\n",
 		result.TotalCustomers,
 		result.Sent,
 		result.SkippedDone,
+		result.MissedPeriodAlerts,
 		result.Failures,
 	)
 

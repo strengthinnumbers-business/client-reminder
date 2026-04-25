@@ -2,7 +2,7 @@ package ports
 
 import "github.com/strengthinnumbers-business/client-reminder/internal/core/entities"
 
-// CompletionDecider decides whether a customer's uploaded files for the current period are complete.
+// CompletionDecider reports whether uploaded files for a period have an active or resolved verdict.
 type CompletionDecider interface {
 	IsCompleted(c entities.Client, p entities.Period) (entities.CompletionVerdict, error)
 	ResetCompletionVerdict(c entities.Client, p entities.Period) error

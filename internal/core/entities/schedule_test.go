@@ -8,26 +8,15 @@ import (
 	"github.com/strengthinnumbers-business/client-reminder/internal/core/entities"
 )
 
-func TestSequenceDayOffsetsEffective(t *testing.T) {
-	if got := (entities.SequenceDayOffsets{}).Effective(); len(got) != len(entities.SequenceStandard) {
-		t.Fatalf("expected default sequence length %d, got %d", len(entities.SequenceStandard), len(got))
+func TestMinimumBusinessDayGapsEffective(t *testing.T) {
+	if got := (entities.MinimumBusinessDayGaps{}).Effective(); len(got) != len(entities.ReminderGapsStandard) {
+		t.Fatalf("expected default reminder gaps length %d, got %d", len(entities.ReminderGapsStandard), len(got))
 	}
 
-	custom := entities.SequenceDayOffsets{1, 4}
+	custom := entities.MinimumBusinessDayGaps{1, 4}
 	got := custom.Effective()
 	if len(got) != 2 || got[0] != 1 || got[1] != 4 {
-		t.Fatalf("unexpected effective sequence: %v", got)
-	}
-}
-
-func TestSequenceDayOffsetsIndexOf(t *testing.T) {
-	idx, ok := (entities.SequenceDayOffsets{0, 3, 5}).IndexOf(3)
-	if !ok || idx != 1 {
-		t.Fatalf("expected offset 3 at index 1, got ok=%v idx=%d", ok, idx)
-	}
-
-	if _, ok := (entities.SequenceDayOffsets{0, 3, 5}).IndexOf(7); ok {
-		t.Fatalf("expected offset 7 to be missing")
+		t.Fatalf("unexpected effective reminder gaps: %v", got)
 	}
 }
 
@@ -86,84 +75,103 @@ func TestPeriodFirstSequenceDay(t *testing.T) {
 	})
 }
 
-func TestPeriodSequenceDayOffsetAt(t *testing.T) {
+func TestAddBusinessDays(t *testing.T) {
 	holidays := &holidaymock.HolidayChecker{}
-	period := entities.CurrentPeriod(entities.PeriodMonthly, time.Date(2026, time.February, 10, 8, 0, 0, 0, time.UTC))
+	holidays.SetHoliday(time.Date(2026, time.March, 30, 0, 0, 0, 0, time.UTC), entities.RegionOntario, true)
 
-	t.Run("valid business day", func(t *testing.T) {
-		offset, ok, err := period.SequenceDayOffsetAt(
-			time.Date(2026, time.February, 10, 8, 0, 0, 0, time.UTC),
-			entities.RegionOntario,
+	got, err := entities.AddBusinessDays(
+		time.Date(2026, time.March, 27, 8, 0, 0, 0, time.UTC),
+		2,
+		entities.RegionOntario,
+		holidays,
+	)
+	if err != nil {
+		t.Fatalf("AddBusinessDays returned error: %v", err)
+	}
+
+	want := time.Date(2026, time.April, 1, 0, 0, 0, 0, time.UTC)
+	if !got.Equal(want) {
+		t.Fatalf("expected %s, got %s", want.Format(time.DateOnly), got.Format(time.DateOnly))
+	}
+}
+
+func TestReminderScheduleNextEligibility(t *testing.T) {
+	holidays := &holidaymock.HolidayChecker{}
+	schedule := entities.ReminderSchedule{
+		PeriodType:   entities.PeriodMonthly,
+		Region:       entities.RegionOntario,
+		ReminderGaps: entities.MinimumBusinessDayGaps{0, 3, 2, 2},
+	}
+
+	t.Run("first reminder can catch up after missed first sequence day", func(t *testing.T) {
+		eligibility, ok, err := schedule.NextEligibility(
+			time.Date(2026, time.February, 4, 8, 0, 0, 0, time.UTC),
+			nil,
 			holidays,
 		)
 		if err != nil {
-			t.Fatalf("SequenceDayOffsetAt returned error: %v", err)
-		}
-		if !ok || offset != 6 {
-			t.Fatalf("expected ok=true offset=6, got ok=%v offset=%d", ok, offset)
-		}
-	})
-
-	t.Run("weekend is invalid", func(t *testing.T) {
-		if _, ok, err := period.SequenceDayOffsetAt(
-			time.Date(2026, time.February, 7, 8, 0, 0, 0, time.UTC),
-			entities.RegionOntario,
-			holidays,
-		); err != nil || ok {
-			t.Fatalf("expected weekend to have no valid offset, got ok=%v err=%v", ok, err)
-		}
-	})
-
-	t.Run("holiday is invalid", func(t *testing.T) {
-		holidays := &holidaymock.HolidayChecker{}
-		holidays.SetHoliday(time.Date(2026, time.February, 10, 0, 0, 0, 0, time.UTC), entities.RegionOntario, true)
-
-		if _, ok, err := period.SequenceDayOffsetAt(
-			time.Date(2026, time.February, 10, 8, 0, 0, 0, time.UTC),
-			entities.RegionOntario,
-			holidays,
-		); err != nil || ok {
-			t.Fatalf("expected holiday to have no valid offset, got ok=%v err=%v", ok, err)
-		}
-	})
-}
-
-func TestReminderScheduleMatchAt(t *testing.T) {
-	holidays := &holidaymock.HolidayChecker{}
-	schedule := entities.ReminderSchedule{
-		PeriodType: entities.PeriodMonthly,
-		Region:     entities.RegionOntario,
-		Sequence:   entities.SequenceDayOffsets{0, 3, 5, 7},
-	}
-
-	t.Run("matching date returns sequence match", func(t *testing.T) {
-		match, ok, err := schedule.MatchAt(time.Date(2026, time.February, 11, 8, 0, 0, 0, time.UTC), holidays)
-		if err != nil {
-			t.Fatalf("MatchAt returned error: %v", err)
+			t.Fatalf("NextEligibility returned error: %v", err)
 		}
 		if !ok {
-			t.Fatalf("expected schedule match")
+			t.Fatalf("expected reminder eligibility")
 		}
-		if match.Period.ID != "2026-02" || match.SequenceDayOffset != 7 || match.SequenceIndex != 3 {
-			t.Fatalf("unexpected match: %+v", match)
-		}
-	})
-
-	t.Run("non sequence business day returns false", func(t *testing.T) {
-		if _, ok, err := schedule.MatchAt(time.Date(2026, time.February, 10, 8, 0, 0, 0, time.UTC), holidays); err != nil || ok {
-			t.Fatalf("expected no match, got ok=%v err=%v", ok, err)
+		if eligibility.Period.ID != "2026-02" || eligibility.SequenceIndex != 0 {
+			t.Fatalf("unexpected eligibility: %+v", eligibility)
 		}
 	})
 
-	t.Run("pre sequence start date returns false", func(t *testing.T) {
+	t.Run("next reminder waits for gap from actual previous send", func(t *testing.T) {
+		previousSends := []entities.SendLogEntry{
+			{
+				ForPeriod:     entities.CurrentPeriod(entities.PeriodMonthly, time.Date(2026, time.February, 10, 8, 0, 0, 0, time.UTC)),
+				SequenceIndex: 0,
+				SentAt:        time.Date(2026, time.February, 4, 8, 0, 0, 0, time.UTC),
+				Success:       true,
+			},
+		}
+
+		if _, ok, err := schedule.NextEligibility(time.Date(2026, time.February, 6, 8, 0, 0, 0, time.UTC), previousSends, holidays); err != nil || ok {
+			t.Fatalf("expected no eligibility before gap passed, got ok=%v err=%v", ok, err)
+		}
+
+		eligibility, ok, err := schedule.NextEligibility(time.Date(2026, time.February, 9, 8, 0, 0, 0, time.UTC), previousSends, holidays)
+		if err != nil {
+			t.Fatalf("NextEligibility returned error: %v", err)
+		}
+		if !ok || eligibility.SequenceIndex != 1 {
+			t.Fatalf("expected sequence index 1 eligibility, got ok=%v eligibility=%+v", ok, eligibility)
+		}
+	})
+
+	t.Run("weekend before sequence start date returns false", func(t *testing.T) {
 		weekly := entities.ReminderSchedule{
-			PeriodType: entities.PeriodWeekly,
-			Region:     entities.RegionOntario,
-			Sequence:   entities.SequenceDayOffsets{0},
+			PeriodType:   entities.PeriodWeekly,
+			Region:       entities.RegionOntario,
+			ReminderGaps: entities.MinimumBusinessDayGaps{0},
 		}
 
-		if _, ok, err := weekly.MatchAt(time.Date(2026, time.February, 8, 8, 0, 0, 0, time.UTC), holidays); err != nil || ok {
-			t.Fatalf("expected no match before sequence start, got ok=%v err=%v", ok, err)
+		if _, ok, err := weekly.NextEligibility(time.Date(2026, time.February, 8, 8, 0, 0, 0, time.UTC), nil, holidays); err != nil || ok {
+			t.Fatalf("expected no eligibility before sequence start, got ok=%v err=%v", ok, err)
+		}
+	})
+
+	t.Run("exhausted gaps return false", func(t *testing.T) {
+		schedule := entities.ReminderSchedule{
+			PeriodType:   entities.PeriodMonthly,
+			Region:       entities.RegionOntario,
+			ReminderGaps: entities.MinimumBusinessDayGaps{0},
+		}
+		previousSends := []entities.SendLogEntry{
+			{
+				ForPeriod:     entities.CurrentPeriod(entities.PeriodMonthly, time.Date(2026, time.February, 2, 8, 0, 0, 0, time.UTC)),
+				SequenceIndex: 0,
+				SentAt:        time.Date(2026, time.February, 2, 8, 0, 0, 0, time.UTC),
+				Success:       true,
+			},
+		}
+
+		if _, ok, err := schedule.NextEligibility(time.Date(2026, time.February, 3, 8, 0, 0, 0, time.UTC), previousSends, holidays); err != nil || ok {
+			t.Fatalf("expected no eligibility after exhausted gaps, got ok=%v err=%v", ok, err)
 		}
 	})
 }

@@ -3,11 +3,11 @@
     "ID": "customer-a",
     "Name": "Acme Corp",
     "PeriodType": 1,
-    "Sequence": [
+    "ReminderGaps": [
       0,
       3,
-      5,
-      7
+      2,
+      2
     ],
     "Region": "AB",
     "Email": "ops@acme.example",

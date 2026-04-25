@@ -2,24 +2,15 @@ package entities
 
 import "time"
 
-type SequenceDayOffsets []int
+type MinimumBusinessDayGaps []int
 
-var SequenceStandard = SequenceDayOffsets{0, 3, 5, 7}
+var ReminderGapsStandard = MinimumBusinessDayGaps{0, 3, 2, 2}
 
-func (s SequenceDayOffsets) Effective() SequenceDayOffsets {
-	if len(s) == 0 {
-		return SequenceStandard
+func (g MinimumBusinessDayGaps) Effective() MinimumBusinessDayGaps {
+	if len(g) == 0 {
+		return ReminderGapsStandard
 	}
-	return s
-}
-
-func (s SequenceDayOffsets) IndexOf(offset int) (int, bool) {
-	for i, dayOffset := range s.Effective() {
-		if dayOffset == offset {
-			return i, true
-		}
-	}
-	return 0, false
+	return g
 }
 
 type ClientRegion string
@@ -44,7 +35,7 @@ type Client struct {
 	ID           string
 	Name         string
 	PeriodType   PeriodType
-	Sequence     SequenceDayOffsets
+	ReminderGaps MinimumBusinessDayGaps
 	Region       ClientRegion
 	Email        string
 	Greeting     string
@@ -54,15 +45,15 @@ type Client struct {
 
 func (c Client) ReminderSchedule() ReminderSchedule {
 	return ReminderSchedule{
-		PeriodType: c.PeriodType,
-		Region:     c.Region,
-		Sequence:   c.Sequence,
+		PeriodType:   c.PeriodType,
+		Region:       c.Region,
+		ReminderGaps: c.ReminderGaps,
 	}
 }
 
 type SendLogEntry struct {
 	ForPeriod     Period
-	Sequence      SequenceDayOffsets
+	ReminderGaps  MinimumBusinessDayGaps
 	SequenceIndex int
 	SentAt        time.Time
 	Success       bool
@@ -77,7 +68,8 @@ type ClientState struct {
 type CompletionVerdict int
 
 const (
-	CompletionUndecided CompletionVerdict = iota
+	CompletionVerdictNotRequested CompletionVerdict = iota
+	CompletionUndecided
 	CompletionIncomplete
 	CompletionComplete
 )
@@ -87,36 +79,73 @@ type HolidayChecker interface {
 }
 
 type ReminderSchedule struct {
-	PeriodType PeriodType
-	Region     ClientRegion
-	Sequence   SequenceDayOffsets
+	PeriodType   PeriodType
+	Region       ClientRegion
+	ReminderGaps MinimumBusinessDayGaps
 }
 
-type SequenceMatch struct {
-	Period            Period
-	SequenceDayOffset int
-	SequenceIndex     int
+type ReminderEligibility struct {
+	Period        Period
+	SequenceIndex int
+	EarliestDate  time.Time
 }
 
-func (s ReminderSchedule) MatchAt(at time.Time, holidays HolidayChecker) (SequenceMatch, bool, error) {
+func (s ReminderSchedule) NextEligibility(at time.Time, successfulSends []SendLogEntry, holidays HolidayChecker) (ReminderEligibility, bool, error) {
 	period := CurrentPeriod(s.PeriodType, at)
+	gaps := s.ReminderGaps.Effective()
+	nextIndex := len(successfulSends)
+	if nextIndex >= len(gaps) {
+		return ReminderEligibility{}, false, nil
+	}
 
-	offset, ok, err := period.SequenceDayOffsetAt(at, s.Region, holidays)
+	earliest, err := s.earliestDate(period, nextIndex, successfulSends, holidays)
 	if err != nil {
-		return SequenceMatch{}, false, err
-	}
-	if !ok {
-		return SequenceMatch{}, false, nil
+		return ReminderEligibility{}, false, err
 	}
 
-	index, ok := s.Sequence.Effective().IndexOf(offset)
+	ok, err := s.CanSendOn(at, earliest, holidays)
+	if err != nil {
+		return ReminderEligibility{}, false, err
+	}
 	if !ok {
-		return SequenceMatch{}, false, nil
+		return ReminderEligibility{}, false, nil
 	}
 
-	return SequenceMatch{
-		Period:            period,
-		SequenceDayOffset: offset,
-		SequenceIndex:     index,
+	return ReminderEligibility{
+		Period:        period,
+		SequenceIndex: nextIndex,
+		EarliestDate:  earliest,
 	}, true, nil
+}
+
+func (s ReminderSchedule) earliestDate(period Period, sequenceIndex int, successfulSends []SendLogEntry, holidays HolidayChecker) (time.Time, error) {
+	gaps := s.ReminderGaps.Effective()
+	if sequenceIndex == 0 {
+		firstDay, err := period.FirstSequenceDay(s.Region, holidays)
+		if err != nil {
+			return time.Time{}, err
+		}
+		return AddBusinessDays(firstDay, gaps[0], s.Region, holidays)
+	}
+
+	previousSentAt := successfulSends[sequenceIndex-1].SentAt
+	return AddBusinessDays(previousSentAt, gaps[sequenceIndex], s.Region, holidays)
+}
+
+func (s ReminderSchedule) CanSendOn(at time.Time, earliest time.Time, holidays HolidayChecker) (bool, error) {
+	currentDay := normalizeDate(at)
+	earliestDay := normalizeDate(earliest)
+
+	if currentDay.Before(earliestDay) {
+		return false, nil
+	}
+	if !isBusinessWeekday(currentDay) {
+		return false, nil
+	}
+
+	holiday, err := isHoliday(currentDay, s.Region, holidays)
+	if err != nil {
+		return false, err
+	}
+	return !holiday, nil
 }

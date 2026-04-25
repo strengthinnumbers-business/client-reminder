@@ -17,3 +17,30 @@ func isHoliday(day time.Time, region ClientRegion, holidays HolidayChecker) (boo
 	}
 	return holidays.IsHoliday(day, region)
 }
+
+func AddBusinessDays(from time.Time, days int, region ClientRegion, holidays HolidayChecker) (time.Time, error) {
+	current := normalizeDate(from)
+	if days <= 0 {
+		return current, nil
+	}
+
+	counted := 0
+	for counted < days {
+		current = current.AddDate(0, 0, 1)
+		if !isBusinessWeekday(current) {
+			continue
+		}
+
+		holiday, err := isHoliday(current, region, holidays)
+		if err != nil {
+			return time.Time{}, err
+		}
+		if holiday {
+			continue
+		}
+
+		counted++
+	}
+
+	return current, nil
+}

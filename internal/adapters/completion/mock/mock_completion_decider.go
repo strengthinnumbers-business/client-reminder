@@ -30,18 +30,18 @@ func (m *CompletionDecider) SetVerdict(customerID, periodID string, verdict enti
 
 func (m *CompletionDecider) IsCompleted(c entities.Client, p entities.Period) (entities.CompletionVerdict, error) {
 	if m.Error != nil {
-		return entities.CompletionUndecided, m.Error
+		return entities.CompletionVerdictNotRequested, m.Error
 	}
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if m.Verdicts == nil {
-		return entities.CompletionUndecided, nil
+		return entities.CompletionVerdictNotRequested, nil
 	}
 	v, ok := m.Verdicts[key{customerID: c.ID, periodID: p.ID}]
 	if !ok {
-		return entities.CompletionUndecided, nil
+		return entities.CompletionVerdictNotRequested, nil
 	}
 	return v, nil
 }
@@ -57,7 +57,7 @@ func (m *CompletionDecider) ResetCompletionVerdict(c entities.Client, p entities
 	k := key{customerID: c.ID, periodID: p.ID}
 	m.Resets = append(m.Resets, k)
 	if m.Verdicts != nil {
-		m.Verdicts[k] = entities.CompletionUndecided
+		m.Verdicts[k] = entities.CompletionVerdictNotRequested
 	}
 
 	return nil

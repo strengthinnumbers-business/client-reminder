@@ -28,8 +28,8 @@ func (r *ClientRepository) GetAllClients() ([]entities.Client, error) {
 	}
 
 	for i := range clients {
-		if len(clients[i].Sequence) == 0 {
-			clients[i].Sequence = entities.SequenceStandard
+		if len(clients[i].ReminderGaps) == 0 {
+			clients[i].ReminderGaps = entities.ReminderGapsStandard
 		}
 	}
 
