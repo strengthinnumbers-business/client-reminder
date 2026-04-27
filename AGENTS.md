@@ -33,4 +33,8 @@ Scheduling details and known edge cases are documented in:
 
 Reminder scheduling uses per-email minimum business-day gaps in the `ReminderGaps` client field. Successful sends advance the sequence; failed sends are only logged for debugging. Missing completion verdicts mean `CompletionVerdictNotRequested`, so reminders continue until an upload triggers `CompletionUndecided`.
 
+Reminder email templates are retrieved through `GlobalConfiguration.GetEmailBodyTemplate(sequenceIndex, style)`, using the current `ReminderEligibility.SequenceIndex` and `Client.EmailStyle`. The port returns both subject and body templates; `EmailSender.SendEmail` accepts the rendered subject explicitly.
+
+Reminder send logs store `ClientID` directly on each `SendLogEntry`; JSON reminder-send persistence should marshal a flat `[]SendLogEntry` under `sends`, not wrap entries in adapter-specific record objects.
+
 Log all errors to allow diagnosing any failed operation, if available with added context like client and period, etc.

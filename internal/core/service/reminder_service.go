@@ -69,11 +69,6 @@ func (s *ReminderService) Run(ctx context.Context) (RunResult, error) {
 		return RunResult{}, fmt.Errorf("load clients: %w", err)
 	}
 
-	template, err := s.globalConfig.GetEmailBodyTemplate()
-	if err != nil {
-		return RunResult{}, fmt.Errorf("load email template: %w", err)
-	}
-
 	now := s.clock().UTC()
 	result := RunResult{TotalCustomers: len(clients)}
 
@@ -122,7 +117,7 @@ func (s *ReminderService) Run(ctx context.Context) (RunResult, error) {
 		case entities.CompletionUndecided:
 			continue
 		case entities.CompletionVerdictNotRequested, entities.CompletionIncomplete:
-			s.sendReminder(template, client, eligibility, verdict, now, &result)
+			s.sendReminder(client, eligibility, client.EmailStyle, verdict, now, &result)
 		}
 	}
 
@@ -185,9 +180,18 @@ func (s *ReminderService) alertMissedPreviousPeriod(client entities.Client, curr
 	return true
 }
 
-func (s *ReminderService) sendReminder(template string, client entities.Client, eligibility entities.ReminderEligibility, verdict entities.CompletionVerdict, now time.Time, result *RunResult) {
-	body := RenderEmailTemplate(template, client, eligibility.Period, now)
+func (s *ReminderService) sendReminder(client entities.Client, eligibility entities.ReminderEligibility, emailStyle string, verdict entities.CompletionVerdict, now time.Time, result *RunResult) {
+	subjectTemplate, bodyTemplate, err := s.globalConfig.GetEmailBodyTemplate(eligibility.SequenceIndex, emailStyle)
+	if err != nil {
+		log.Printf("load email template for client %s period %s sequence_index=%d style=%q: %v", client.ID, eligibility.Period.ID, eligibility.SequenceIndex, emailStyle, err)
+		result.Failures++
+		return
+	}
+
+	subjectLine := RenderEmailTemplate(subjectTemplate, client, eligibility.Period, now)
+	body := RenderEmailTemplate(bodyTemplate, client, eligibility.Period, now)
 	entry := entities.SendLogEntry{
+		ClientID:      client.ID,
 		ForPeriod:     eligibility.Period,
 		ReminderGaps:  client.ReminderGaps.Effective(),
 		SequenceIndex: eligibility.SequenceIndex,
@@ -195,7 +199,7 @@ func (s *ReminderService) sendReminder(template string, client entities.Client, 
 		Success:       true,
 	}
 
-	if err := s.emailSender.SendEmail(client.Email, body); err != nil {
+	if err := s.emailSender.SendEmail(client.Email, subjectLine, body); err != nil {
 		log.Printf("send reminder email for client %s period %s sequence_index=%d: %v", client.ID, eligibility.Period.ID, eligibility.SequenceIndex, err)
 		entry.Success = false
 		entry.ErrorMessage = err.Error()

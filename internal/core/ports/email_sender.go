@@ -1,5 +1,5 @@
 package ports
 
 type EmailSender interface {
-	SendEmail(email, textBody string) error
+	SendEmail(email, subjectLine, textBody string) error
 }

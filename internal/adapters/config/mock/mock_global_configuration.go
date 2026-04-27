@@ -1,13 +1,25 @@
 package mock
 
 type GlobalConfiguration struct {
-	Template string
-	Error    error
+	SubjectTemplate string
+	Template        string
+	Calls           []TemplateCall
+	Error           error
 }
 
-func (m *GlobalConfiguration) GetEmailBodyTemplate() (string, error) {
+type TemplateCall struct {
+	SequenceIndex int
+	Style         string
+}
+
+func (m *GlobalConfiguration) GetEmailBodyTemplate(sequenceIndex int, style string) (string, string, error) {
+	m.Calls = append(m.Calls, TemplateCall{SequenceIndex: sequenceIndex, Style: style})
 	if m.Error != nil {
-		return "", m.Error
+		return "", "", m.Error
 	}
-	return m.Template, nil
+	subject := m.SubjectTemplate
+	if subject == "" {
+		subject = "Reminder to upload your data"
+	}
+	return subject, m.Template, nil
 }

@@ -51,6 +51,9 @@ func TestReminderServiceRun_SendsOnlyForCustomersReadyForReminder(t *testing.T) 
 	if len(emailSender.Sent) != 2 {
 		t.Fatalf("expected 2 sent emails, got %d", len(emailSender.Sent))
 	}
+	if emailSender.Sent[0].Subject != "c1 data request for 2026-02" {
+		t.Fatalf("unexpected subject: %q", emailSender.Sent[0].Subject)
+	}
 }
 
 func TestReminderServiceRun_UsesActualPreviousSendForNextGap(t *testing.T) {
@@ -88,6 +91,62 @@ func TestReminderServiceRun_UsesActualPreviousSendForNextGap(t *testing.T) {
 	}
 	if len(successfulSends) != 2 || successfulSends[1].SequenceIndex != 1 {
 		t.Fatalf("expected second successful send at index 1, got %+v", successfulSends)
+	}
+}
+
+func TestReminderServiceRun_LoadsTemplateForSequenceIndexAndEmailStyle(t *testing.T) {
+	now := time.Date(2026, time.February, 9, 8, 0, 0, 0, time.UTC)
+	customer := testClient("c1")
+	customer.EmailStyle = "brief"
+	currentPeriod := entities.CurrentPeriod(customer.PeriodType, now)
+	config := &configmock.GlobalConfiguration{
+		SubjectTemplate: "Reminder {{PeriodID}}",
+		Template:        "{{Greeting}} {{PeriodID}}",
+	}
+	sendRepo := &sendmock.ReminderSendRepository{
+		SuccessfulSends: []sendmock.RecordedSend{
+			{
+				ClientID: customer.ID,
+				Entry: entities.SendLogEntry{
+					ForPeriod:     currentPeriod,
+					ReminderGaps:  customer.ReminderGaps,
+					SequenceIndex: 0,
+					SentAt:        time.Date(2026, time.February, 4, 8, 0, 0, 0, time.UTC),
+					Success:       true,
+				},
+			},
+		},
+	}
+	emailSender := &emailmock.EmailSender{}
+
+	svc := service.NewReminderService(
+		emailSender,
+		&clientmock.ClientRepository{Clients: []entities.Client{customer}},
+		config,
+		&completionmock.CompletionDecider{},
+		&holidaymock.HolidayChecker{},
+		sendRepo,
+		dealtWithPrevious([]entities.Client{customer}, now),
+		&adminmock.AdminAlerter{},
+		func() time.Time { return now },
+	)
+
+	result, err := svc.Run(context.Background())
+	if err != nil {
+		t.Fatalf("run returned error: %v", err)
+	}
+
+	if result.Sent != 1 {
+		t.Fatalf("expected sent=1, got %d", result.Sent)
+	}
+	if len(config.Calls) != 1 {
+		t.Fatalf("expected one template lookup, got %+v", config.Calls)
+	}
+	if config.Calls[0].SequenceIndex != 1 || config.Calls[0].Style != "brief" {
+		t.Fatalf("expected sequence/style lookup 1/brief, got %+v", config.Calls[0])
+	}
+	if len(emailSender.Sent) != 1 || emailSender.Sent[0].Subject != "Reminder 2026-02" {
+		t.Fatalf("unexpected sent email: %+v", emailSender.Sent)
 	}
 }
 
@@ -267,6 +326,7 @@ func testClient(id string) entities.Client {
 		ReminderGaps: entities.MinimumBusinessDayGaps{0, 3, 2, 2},
 		Region:       entities.RegionOntario,
 		Email:        id + "@example.com",
+		EmailStyle:   "standard",
 		Greeting:     "Hello,",
 		FolderURL:    "https://files/" + id,
 		UploadPrompt: "Upload your files",
@@ -298,7 +358,10 @@ func newTestService(
 	return service.NewReminderService(
 		emailSender,
 		clientRepo,
-		&configmock.GlobalConfiguration{Template: "{{Greeting}} {{PeriodID}} {{FolderURL}}"},
+		&configmock.GlobalConfiguration{
+			SubjectTemplate: "{{ClientName}} data request for {{PeriodID}}",
+			Template:        "{{Greeting}} {{PeriodID}} {{FolderURL}}",
+		},
 		completionDecider,
 		&holidaymock.HolidayChecker{},
 		sendRepo,

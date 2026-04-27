@@ -40,6 +40,7 @@ Optional env vars:
 - `SMTP_PASSWORD`
 - `CLIENTS_JSON_PATH` (default: `configs/clients.json`)
 - `EMAIL_TEMPLATE_PATH` (default: use `EMAIL_BODY_TEMPLATE` env)
+- `EMAIL_SUBJECT_TEMPLATE` (default: `Reminder to upload your data`)
 - `EMAIL_BODY_TEMPLATE` (used when `EMAIL_TEMPLATE_PATH` is empty)
 - `COMPLETION_STATE_PATH` (default: `state/completion-verdicts.json`)
 - `REMINDER_SEND_STATE_PATH` (default: `state/reminder-sends.json`)

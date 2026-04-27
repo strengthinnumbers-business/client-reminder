@@ -11,6 +11,7 @@
     ],
     "Region": "AB",
     "Email": "ops@acme.example",
+    "EmailStyle": "standard",
     "Greeting": "Hello Acme Team,",
     "FolderURL": "https://files.example.com/acme",
     "UploadPrompt": "Please upload the latest monthly data exports."

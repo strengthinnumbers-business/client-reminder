@@ -11,13 +11,8 @@ import (
 	"github.com/strengthinnumbers-business/client-reminder/internal/core/entities"
 )
 
-type record struct {
-	ClientID string                `json:"client_id"`
-	Entry    entities.SendLogEntry `json:"entry"`
-}
-
 type state struct {
-	Sends []record `json:"sends"`
+	Sends []entities.SendLogEntry `json:"sends"`
 }
 
 type ReminderSendRepository struct {
@@ -40,8 +35,8 @@ func (r *ReminderSendRepository) ListSuccessfulSends(client entities.Client, per
 
 	var entries []entities.SendLogEntry
 	for _, send := range state.Sends {
-		if send.ClientID == client.ID && send.Entry.ForPeriod == period && send.Entry.Success {
-			entries = append(entries, send.Entry)
+		if send.ClientID == client.ID && send.ForPeriod == period && send.Success {
+			entries = append(entries, send)
 		}
 	}
 	sort.Slice(entries, func(i, j int) bool {
@@ -55,16 +50,18 @@ func (r *ReminderSendRepository) ListSuccessfulSends(client entities.Client, per
 }
 
 func (r *ReminderSendRepository) RecordSuccessfulSend(client entities.Client, entry entities.SendLogEntry) error {
+	entry.ClientID = client.ID
 	entry.Success = true
-	return r.append(client, entry)
+	return r.append(entry)
 }
 
 func (r *ReminderSendRepository) RecordFailedSend(client entities.Client, entry entities.SendLogEntry) error {
+	entry.ClientID = client.ID
 	entry.Success = false
-	return r.append(client, entry)
+	return r.append(entry)
 }
 
-func (r *ReminderSendRepository) append(client entities.Client, entry entities.SendLogEntry) error {
+func (r *ReminderSendRepository) append(entry entities.SendLogEntry) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -73,7 +70,7 @@ func (r *ReminderSendRepository) append(client entities.Client, entry entities.S
 		return err
 	}
 
-	state.Sends = append(state.Sends, record{ClientID: client.ID, Entry: entry})
+	state.Sends = append(state.Sends, entry)
 	return r.store(state)
 }
 

@@ -38,6 +38,7 @@ type Client struct {
 	ReminderGaps MinimumBusinessDayGaps
 	Region       ClientRegion
 	Email        string
+	EmailStyle   string
 	Greeting     string
 	FolderURL    string
 	UploadPrompt string
@@ -52,6 +53,7 @@ func (c Client) ReminderSchedule() ReminderSchedule {
 }
 
 type SendLogEntry struct {
+	ClientID      string
 	ForPeriod     Period
 	ReminderGaps  MinimumBusinessDayGaps
 	SequenceIndex int

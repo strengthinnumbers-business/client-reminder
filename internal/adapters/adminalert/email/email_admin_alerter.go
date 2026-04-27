@@ -27,5 +27,5 @@ func (a *AdminAlerter) AlertMissedPeriod(client entities.Client, period entities
 		period.ID,
 		reason,
 	)
-	return a.emailSender.SendEmail(a.adminEmail, body)
+	return a.emailSender.SendEmail(a.adminEmail, "Client reminder missed a whole period", body)
 }

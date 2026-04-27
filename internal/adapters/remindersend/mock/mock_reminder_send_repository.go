@@ -50,6 +50,7 @@ func (r *ReminderSendRepository) RecordSuccessfulSend(client entities.Client, en
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	entry.ClientID = client.ID
 	entry.Success = true
 	r.SuccessfulSends = append(r.SuccessfulSends, RecordedSend{ClientID: client.ID, Entry: entry})
 	return nil
@@ -63,6 +64,7 @@ func (r *ReminderSendRepository) RecordFailedSend(client entities.Client, entry 
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	entry.ClientID = client.ID
 	entry.Success = false
 	r.FailedSends = append(r.FailedSends, RecordedSend{ClientID: client.ID, Entry: entry})
 	return nil

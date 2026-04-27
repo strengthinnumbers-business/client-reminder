@@ -3,6 +3,7 @@ package jsonfile
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -45,6 +46,18 @@ func TestReminderSendRepository_MissingFileStartsEmptyAndStoresSends(t *testing.
 	}
 	if len(sends) != 1 || sends[0].SequenceIndex != 0 {
 		t.Fatalf("expected only successful send to be listed, got %+v", sends)
+	}
+	if sends[0].ClientID != client.ID {
+		t.Fatalf("expected send to include client ID %q, got %+v", client.ID, sends[0])
+	}
+
+	bytes, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read stored state: %v", err)
+	}
+	stored := string(bytes)
+	if strings.Contains(stored, `"entry"`) || !strings.Contains(stored, `"ClientID": "c1"`) {
+		t.Fatalf("expected flat SendLogEntry records in stored state, got %s", stored)
 	}
 }
 

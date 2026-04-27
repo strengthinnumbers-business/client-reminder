@@ -22,12 +22,12 @@ func New(host, port, username, password, from string) *EmailSender {
 	return &EmailSender{host: host, port: port, from: from, auth: auth}
 }
 
-func (s *EmailSender) SendEmail(email, textBody string) error {
+func (s *EmailSender) SendEmail(email, subjectLine, textBody string) error {
 	addr := fmt.Sprintf("%s:%s", s.host, s.port)
 	message := strings.Join([]string{
 		fmt.Sprintf("From: %s", s.from),
 		fmt.Sprintf("To: %s", email),
-		"Subject: Reminder to upload your data",
+		fmt.Sprintf("Subject: %s", subjectLine),
 		"MIME-Version: 1.0",
 		"Content-Type: text/plain; charset=\"utf-8\"",
 		"",
