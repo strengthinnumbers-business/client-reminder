@@ -8,6 +8,8 @@ import (
 	"github.com/strengthinnumbers-business/client-reminder/internal/core/entities"
 )
 
+var emptyHolidays = &holidaymock.HolidayChecker{}
+
 func TestMinimumBusinessDayGapsEffective(t *testing.T) {
 	if got := (entities.MinimumBusinessDayGaps{}).Effective(); len(got) != len(entities.ReminderGapsStandard) {
 		t.Fatalf("expected default reminder gaps length %d, got %d", len(entities.ReminderGapsStandard), len(got))
@@ -21,11 +23,19 @@ func TestMinimumBusinessDayGapsEffective(t *testing.T) {
 }
 
 func TestPeriodFirstSequenceDay(t *testing.T) {
-	holidays := &holidaymock.HolidayChecker{}
+	// February 2026
+	// Mo  Tu  We  Th  Fr | Sa  So
+	//--------------------|--------
+	//                    |     01
+	// 02  03  04  05  06 | 07  08
+	// 09  10  11  12  13 | 14  15
+	// 16  17  18  19  20 | 21  22
+	// 23  24  25  26  27 | 28
+	//--------------------|--------
 
 	t.Run("monthly", func(t *testing.T) {
 		period := entities.CurrentPeriod(entities.PeriodMonthly, time.Date(2026, time.February, 10, 8, 0, 0, 0, time.UTC))
-		got, err := period.FirstSequenceDay(entities.RegionOntario, holidays)
+		got, err := period.FirstSequenceDay(entities.RegionOntario, emptyHolidays)
 		if err != nil {
 			t.Fatalf("FirstSequenceDay returned error: %v", err)
 		}
@@ -37,7 +47,7 @@ func TestPeriodFirstSequenceDay(t *testing.T) {
 
 	t.Run("weekly", func(t *testing.T) {
 		period := entities.CurrentPeriod(entities.PeriodWeekly, time.Date(2026, time.February, 10, 8, 0, 0, 0, time.UTC))
-		got, err := period.FirstSequenceDay(entities.RegionOntario, holidays)
+		got, err := period.FirstSequenceDay(entities.RegionOntario, emptyHolidays)
 		if err != nil {
 			t.Fatalf("FirstSequenceDay returned error: %v", err)
 		}
@@ -47,9 +57,25 @@ func TestPeriodFirstSequenceDay(t *testing.T) {
 		}
 	})
 
+	// January 2026
+	// Mo  Tu  We  Th  Fr | Sa  So
+	//--------------------|--------
+	//             01  02 | 03  04
+	// 05  06  07  08  09 | 10  11
+	// 12  13  14  15  16 | 17  18
+	// 19  20  21  22  23 | 24  25
+	// 26  27  28  29  30 | 31
+	//--------------------|--------
+	// February 2026
+	//--------------------|--------
+	//                    |     01
+	// 02  03  04  05  06 | 07  08
+	// 09  10  11  12  13 | 14  15
+	//[...]---------------|--------
+
 	t.Run("quarterly", func(t *testing.T) {
 		period := entities.CurrentPeriod(entities.PeriodQuarterly, time.Date(2026, time.February, 10, 8, 0, 0, 0, time.UTC))
-		got, err := period.FirstSequenceDay(entities.RegionOntario, holidays)
+		got, err := period.FirstSequenceDay(entities.RegionOntario, emptyHolidays)
 		if err != nil {
 			t.Fatalf("FirstSequenceDay returned error: %v", err)
 		}
@@ -58,6 +84,16 @@ func TestPeriodFirstSequenceDay(t *testing.T) {
 			t.Fatalf("expected %s, got %s", want.Format(time.DateOnly), got.Format(time.DateOnly))
 		}
 	})
+
+	// June 2026
+	// Mo  Tu  We  Th  Fr | Sa  So
+	//--------------------|--------
+	//*01* 02  03  04  05 | 06  07
+	// 08  09  10  11  12 | 13  14
+	// 15  16  17  18  19 | 20  21
+	// 22  23  24  25  26 | 27  28
+	// 29  30             |
+	//--------------------|--------
 
 	t.Run("holiday shifts first monday", func(t *testing.T) {
 		holidays := &holidaymock.HolidayChecker{}
@@ -76,6 +112,18 @@ func TestPeriodFirstSequenceDay(t *testing.T) {
 }
 
 func TestAddBusinessDays(t *testing.T) {
+	// March 2026
+	// Mo  Tu  We  Th  Fr | Sa  So
+	//[...]---------------|--------
+	// 23  24  25  26  27 | 28  29
+	//*30* 31             |
+	//--------------------|--------
+	// April 2026
+	//--------------------|--------
+	//         01  02  03 | 04  05
+	// 06  07  08  09  10 | 11  12
+	//[...]---------------|--------
+
 	holidays := &holidaymock.HolidayChecker{}
 	holidays.SetHoliday(time.Date(2026, time.March, 30, 0, 0, 0, 0, time.UTC), entities.RegionOntario, true)
 
@@ -96,7 +144,16 @@ func TestAddBusinessDays(t *testing.T) {
 }
 
 func TestReminderScheduleNextEligibility(t *testing.T) {
-	holidays := &holidaymock.HolidayChecker{}
+	// February 2026
+	// Mo  Tu  We  Th  Fr | Sa  So
+	//--------------------|--------
+	//                    |     01
+	// 02  03  04  05  06 | 07  08
+	// 09  10  11  12  13 | 14  15
+	// 16  17  18  19  20 | 21  22
+	// 23  24  25  26  27 | 28
+	//--------------------|--------
+
 	schedule := entities.ReminderSchedule{
 		PeriodType:   entities.PeriodMonthly,
 		Region:       entities.RegionOntario,
@@ -107,7 +164,7 @@ func TestReminderScheduleNextEligibility(t *testing.T) {
 		eligibility, ok, err := schedule.NextEligibility(
 			time.Date(2026, time.February, 4, 8, 0, 0, 0, time.UTC),
 			nil,
-			holidays,
+			emptyHolidays,
 		)
 		if err != nil {
 			t.Fatalf("NextEligibility returned error: %v", err)
@@ -130,11 +187,11 @@ func TestReminderScheduleNextEligibility(t *testing.T) {
 			},
 		}
 
-		if _, ok, err := schedule.NextEligibility(time.Date(2026, time.February, 6, 8, 0, 0, 0, time.UTC), previousSends, holidays); err != nil || ok {
+		if _, ok, err := schedule.NextEligibility(time.Date(2026, time.February, 6, 8, 0, 0, 0, time.UTC), previousSends, emptyHolidays); err != nil || ok {
 			t.Fatalf("expected no eligibility before gap passed, got ok=%v err=%v", ok, err)
 		}
 
-		eligibility, ok, err := schedule.NextEligibility(time.Date(2026, time.February, 9, 8, 0, 0, 0, time.UTC), previousSends, holidays)
+		eligibility, ok, err := schedule.NextEligibility(time.Date(2026, time.February, 9, 8, 0, 0, 0, time.UTC), previousSends, emptyHolidays)
 		if err != nil {
 			t.Fatalf("NextEligibility returned error: %v", err)
 		}
@@ -150,7 +207,7 @@ func TestReminderScheduleNextEligibility(t *testing.T) {
 			ReminderGaps: entities.MinimumBusinessDayGaps{0},
 		}
 
-		if _, ok, err := weekly.NextEligibility(time.Date(2026, time.February, 8, 8, 0, 0, 0, time.UTC), nil, holidays); err != nil || ok {
+		if _, ok, err := weekly.NextEligibility(time.Date(2026, time.February, 8, 8, 0, 0, 0, time.UTC), nil, emptyHolidays); err != nil || ok {
 			t.Fatalf("expected no eligibility before sequence start, got ok=%v err=%v", ok, err)
 		}
 	})
@@ -170,7 +227,7 @@ func TestReminderScheduleNextEligibility(t *testing.T) {
 			},
 		}
 
-		if _, ok, err := schedule.NextEligibility(time.Date(2026, time.February, 3, 8, 0, 0, 0, time.UTC), previousSends, holidays); err != nil || ok {
+		if _, ok, err := schedule.NextEligibility(time.Date(2026, time.February, 3, 8, 0, 0, 0, time.UTC), previousSends, emptyHolidays); err != nil || ok {
 			t.Fatalf("expected no eligibility after exhausted gaps, got ok=%v err=%v", ok, err)
 		}
 	})

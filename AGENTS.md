@@ -22,7 +22,9 @@ You can find all ports [here](./internal/core/ports).
 
 You can find all business entities [here](./internal/core/entities).
 
-When building this app, please set the GOCACHE env var to point at the `./.gocache` sub-dir to avoid sandbox issues.
+When building this app, please set the GOCACHE env var to an absolute path pointing at the `./.gocache` sub-dir to avoid sandbox issues.
+
+Standalone development helper scripts live in `./scripts`. Keep them self-contained and runnable with `go run`; for example, `scripts/print-calendar-comments.go` prints pasteable Go-comment calendars for scheduling tests.
 
 Scheduling details and known edge cases are documented in:
 
