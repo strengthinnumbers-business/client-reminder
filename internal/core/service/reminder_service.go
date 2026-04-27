@@ -86,12 +86,14 @@ func (s *ReminderService) Run(ctx context.Context) (RunResult, error) {
 		schedule := client.ReminderSchedule()
 		successfulSends, err := s.reminderSendRepo.ListSuccessfulSends(client, currentPeriod)
 		if err != nil {
+			log.Printf("list successful reminder sends for client %s period %s: %v", client.ID, currentPeriod.ID, err)
 			result.Failures++
 			continue
 		}
 
 		eligibility, ok, err := schedule.NextEligibility(now, successfulSends, s.holidayChecker)
 		if err != nil {
+			log.Printf("determine reminder eligibility for client %s period %s: %v", client.ID, currentPeriod.ID, err)
 			result.Failures++
 			continue
 		}
@@ -108,6 +110,7 @@ func (s *ReminderService) Run(ctx context.Context) (RunResult, error) {
 
 		verdict, err := s.completionDecider.IsCompleted(client, eligibility.Period)
 		if err != nil {
+			log.Printf("decide completion for client %s period %s: %v", client.ID, eligibility.Period.ID, err)
 			result.Failures++
 			continue
 		}
@@ -134,6 +137,7 @@ func (s *ReminderService) alertMissedPreviousPeriod(client entities.Client, curr
 
 	dealtWith, err := s.periodResolutionRepo.IsDealtWith(client, previousPeriod)
 	if err != nil {
+		log.Printf("check period resolution for client %s period %s: %v", client.ID, previousPeriod.ID, err)
 		result.Failures++
 		return false
 	}
@@ -143,6 +147,7 @@ func (s *ReminderService) alertMissedPreviousPeriod(client entities.Client, curr
 
 	successfulSends, err := s.reminderSendRepo.ListSuccessfulSends(client, previousPeriod)
 	if err != nil {
+		log.Printf("list successful reminder sends for client %s previous period %s: %v", client.ID, previousPeriod.ID, err)
 		result.Failures++
 		return false
 	}
@@ -152,12 +157,14 @@ func (s *ReminderService) alertMissedPreviousPeriod(client entities.Client, curr
 
 	verdict, err := s.completionDecider.IsCompleted(client, previousPeriod)
 	if err != nil {
+		log.Printf("decide completion for client %s previous period %s: %v", client.ID, previousPeriod.ID, err)
 		result.Failures++
 		return false
 	}
 	if verdict == entities.CompletionComplete {
 		reason := "completion complete: no reminder needed"
 		if err := s.periodResolutionRepo.MarkDealtWith(client, previousPeriod, reason); err != nil {
+			log.Printf("mark period dealt with for client %s previous period %s: %v", client.ID, previousPeriod.ID, err)
 			result.Failures++
 		}
 		return false
@@ -165,10 +172,12 @@ func (s *ReminderService) alertMissedPreviousPeriod(client entities.Client, curr
 
 	reason := "admin alerted: period ended with no successful reminders"
 	if err := s.adminAlerter.AlertMissedPeriod(client, previousPeriod, reason); err != nil {
+		log.Printf("alert missed period for client %s previous period %s: %v", client.ID, previousPeriod.ID, err)
 		result.Failures++
 		return false
 	}
 	if err := s.periodResolutionRepo.MarkDealtWith(client, previousPeriod, reason); err != nil {
+		log.Printf("mark period dealt with for client %s previous period %s: %v", client.ID, previousPeriod.ID, err)
 		result.Failures++
 		return false
 	}
@@ -187,6 +196,7 @@ func (s *ReminderService) sendReminder(template string, client entities.Client, 
 	}
 
 	if err := s.emailSender.SendEmail(client.Email, body); err != nil {
+		log.Printf("send reminder email for client %s period %s sequence_index=%d: %v", client.ID, eligibility.Period.ID, eligibility.SequenceIndex, err)
 		entry.Success = false
 		entry.ErrorMessage = err.Error()
 		if recordErr := s.reminderSendRepo.RecordFailedSend(client, entry); recordErr != nil {
@@ -198,12 +208,14 @@ func (s *ReminderService) sendReminder(template string, client entities.Client, 
 
 	result.Sent++
 	if err := s.reminderSendRepo.RecordSuccessfulSend(client, entry); err != nil {
+		log.Printf("record successful reminder send for client %s period %s sequence_index=%d: %v", client.ID, eligibility.Period.ID, eligibility.SequenceIndex, err)
 		result.Failures++
 		return
 	}
 
 	if verdict == entities.CompletionIncomplete {
 		if err := s.completionDecider.ResetCompletionVerdict(client, eligibility.Period); err != nil {
+			log.Printf("reset completion verdict for client %s period %s: %v", client.ID, eligibility.Period.ID, err)
 			result.Failures++
 		}
 	}

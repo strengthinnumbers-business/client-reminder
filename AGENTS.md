@@ -32,3 +32,5 @@ Scheduling details and known edge cases are documented in:
 - [Known Scheduling Edge Cases](./context/KNOWN_SCHEDULING_EDGE_CASES.md)
 
 Reminder scheduling uses per-email minimum business-day gaps in the `ReminderGaps` client field. Successful sends advance the sequence; failed sends are only logged for debugging. Missing completion verdicts mean `CompletionVerdictNotRequested`, so reminders continue until an upload triggers `CompletionUndecided`.
+
+Log all errors to allow diagnosing any failed operation, if available with added context like client and period, etc.
