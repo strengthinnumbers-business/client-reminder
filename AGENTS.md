@@ -24,7 +24,7 @@ You can find all business entities [here](./internal/core/entities).
 
 When building this app, please set the GOCACHE env var to an absolute path pointing at the `./.gocache` sub-dir to avoid sandbox issues.
 
-Standalone development helper scripts live in `./scripts`. Keep them self-contained and runnable with `go run`; for example, `scripts/print-calendar-comments.go` prints pasteable Go-comment calendars for scheduling tests.
+Standalone development helper scripts live in `./scripts`. Keep them self-contained and runnable with `go run`; for example, `scripts/print-calendar-comments.go` prints pasteable Go-comment calendars for scheduling tests. Scripts that need subcommands should use `github.com/alecthomas/kong`; bind interface-typed command dependencies with `kong.BindTo(value, (*Interface)(nil))`. `scripts/try-notion-api-client.go` manually exercises the sparse Notion API client against a real Notion connection and accepts `--notion-api-key` or falls back to `NOTION_API_KEY`.
 
 Scheduling details and known edge cases are documented in:
 
@@ -38,3 +38,7 @@ Reminder email templates are retrieved through `GlobalConfiguration.GetEmailBody
 Reminder send logs store `ClientID` directly on each `SendLogEntry`; JSON reminder-send persistence should marshal a flat `[]SendLogEntry` under `sends`, not wrap entries in adapter-specific record objects.
 
 Log all errors to allow diagnosing any failed operation, if available with added context like client and period, etc.
+
+Shared sparse Notion API code lives in `./internal/adapters/notionapi` so multiple outer adapters can reuse it without leaking Notion request / response details into core ports. It only supports the endpoints this app needs, uses internal-connection tokens from `NOTION_API_KEY`, sends the current `Notion-Version` header, and spaces every API request at least 333 ms after the previous request ends.
+
+Notion-backed client configuration lives in `./internal/adapters/client/notion`. Keep Notion field-name mapping configurable there; the default field names mirror `entities.Client` plus a `Status` field. Client queries should filter Notion `Status` to `active`, and the repository should return core `entities.Client` values only.

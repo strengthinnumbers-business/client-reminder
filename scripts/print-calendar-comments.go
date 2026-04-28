@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Prints pasteable Go-comment calendars, to help with reasoning about the scheduling tests.
 
 package main
