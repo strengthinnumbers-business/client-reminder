@@ -99,11 +99,6 @@ func (r *ClientRepository) resolveDataSourceID(ctx context.Context) (string, err
 }
 
 func (r *ClientRepository) clientFromPage(page notionapi.Page) (entities.Client, error) {
-	id := propertyText(page.Properties, r.fields.ID)
-	if id == "" {
-		id = page.ID
-	}
-
 	periodType, err := parsePeriodType(propertyText(page.Properties, r.fields.PeriodType))
 	if err != nil {
 		return entities.Client{}, fmt.Errorf("%s: %w", r.fields.PeriodType, err)
@@ -118,7 +113,7 @@ func (r *ClientRepository) clientFromPage(page notionapi.Page) (entities.Client,
 	}
 
 	return entities.Client{
-		ID:           id,
+		ID:           page.ID,
 		Name:         propertyText(page.Properties, r.fields.Name),
 		PeriodType:   periodType,
 		ReminderGaps: gaps,
@@ -170,7 +165,6 @@ func (m FieldMapping) withDefaults() FieldMapping {
 
 func (m FieldMapping) filterProperties() []string {
 	return []string{
-		m.ID,
 		m.Name,
 		m.PeriodType,
 		m.ReminderGaps,

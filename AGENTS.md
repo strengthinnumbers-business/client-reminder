@@ -24,7 +24,9 @@ You can find all business entities [here](./internal/core/entities).
 
 When building this app, please set the GOCACHE env var to an absolute path pointing at the `./.gocache` sub-dir to avoid sandbox issues.
 
-Standalone development helper scripts live in `./scripts`. Keep them self-contained and runnable with `go run`; for example, `scripts/print-calendar-comments.go` prints pasteable Go-comment calendars for scheduling tests. Scripts that need subcommands should use `github.com/alecthomas/kong`; bind interface-typed command dependencies with `kong.BindTo(value, (*Interface)(nil))`. `scripts/try-notion-api-client.go` manually exercises the sparse Notion API client against a real Notion connection and accepts `--notion-api-key` or falls back to `NOTION_API_KEY`.
+Standalone development helper scripts live in `./scripts`. Keep them self-contained and runnable with `go run`; for example, `scripts/print-calendar-comments.go` prints pasteable Go-comment calendars for scheduling tests. Scripts that need subcommands should use `github.com/alecthomas/kong`; bind interface-typed command dependencies with `kong.BindTo(value, (*Interface)(nil))`. `scripts/try-notion-api-client.go` manually exercises the sparse Notion API client against a real Notion connection and accepts `--notion-api-key` or falls back to `NOTION_API_KEY`. `scripts/try-notion-client-repository.go` manually exercises the composed Notion API client plus Notion-backed client repository with `--data-source-id` and prints mapped core clients as JSON.
+
+Adapter isolation should be tested in layers: fake the adapter's immediate dependency for fast mapping/contract tests, inject an `http.Client` or local test server for protocol-level tests, and use opt-in manual or integration helpers for real external services. Real-service helpers should live in `./scripts` or be guarded behind explicit environment variables/build tags so ordinary `go test ./...` stays deterministic and does not call the network.
 
 Scheduling details and known edge cases are documented in:
 
