@@ -66,48 +66,8 @@ type Properties map[string]Property
 
 func (p Properties) Text(name string) string {
 	property, ok := p[name]
-	if !ok {
-		return ""
-	}
-
-	switch property.Type {
-	case "title":
-		return plainText(property.Title)
-	case "rich_text":
-		return plainText(property.RichText)
-	case "email":
-		return property.Email
-	case "url":
-		return property.URL
-	case "select":
-		if property.Select != nil {
-			return property.Select.Name
-		}
-	case "status":
-		if property.Status != nil {
-			return property.Status.Name
-		}
-	case "multi_select":
-		values := make([]string, 0, len(property.MultiSelect))
-		for _, value := range property.MultiSelect {
-			values = append(values, value.Name)
-		}
-		return strings.Join(values, ",")
-	case "number":
-		if property.Number != nil {
-			if *property.Number == float64(int(*property.Number)) {
-				return strconv.Itoa(int(*property.Number))
-			}
-			return strconv.FormatFloat(*property.Number, 'f', -1, 64)
-		}
-	case "checkbox":
-		if property.Checkbox != nil {
-			return strconv.FormatBool(*property.Checkbox)
-		}
-	case "formula":
-		if property.Formula != nil {
-			return formulaText(*property.Formula)
-		}
+	if ok {
+		return property.Text(name)
 	}
 
 	return ""
@@ -130,6 +90,50 @@ type Property struct {
 	Relation    []PageReference `json:"relation"`
 	HasMore     bool            `json:"has_more"`
 	Raw         map[string]any  `json:"-"`
+}
+
+func (p Property) Text(name string) string {
+	switch p.Type {
+	case "title":
+		return plainText(p.Title)
+	case "rich_text":
+		return plainText(p.RichText)
+	case "email":
+		return p.Email
+	case "url":
+		return p.URL
+	case "select":
+		if p.Select != nil {
+			return p.Select.Name
+		}
+	case "status":
+		if p.Status != nil {
+			return p.Status.Name
+		}
+	case "multi_select":
+		values := make([]string, 0, len(p.MultiSelect))
+		for _, value := range p.MultiSelect {
+			values = append(values, value.Name)
+		}
+		return strings.Join(values, ",")
+	case "number":
+		if p.Number != nil {
+			if *p.Number == float64(int(*p.Number)) {
+				return strconv.Itoa(int(*p.Number))
+			}
+			return strconv.FormatFloat(*p.Number, 'f', -1, 64)
+		}
+	case "checkbox":
+		if p.Checkbox != nil {
+			return strconv.FormatBool(*p.Checkbox)
+		}
+	case "formula":
+		if p.Formula != nil {
+			return formulaText(*p.Formula)
+		}
+	}
+
+	return ""
 }
 
 type RichTextValue struct {
