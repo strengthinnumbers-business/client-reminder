@@ -44,6 +44,10 @@ type QueryDataSourceRequest struct {
 	PageSize         int
 }
 
+type RetrievePageRequest struct {
+	FilterProperties []string
+}
+
 type SearchResult struct {
 	Object string          `json:"object"`
 	ID     string          `json:"id"`
@@ -51,9 +55,11 @@ type SearchResult struct {
 }
 
 type Page struct {
-	Object     string     `json:"object"`
-	ID         string     `json:"id"`
-	Properties Properties `json:"properties"`
+	Object         string     `json:"object"`
+	ID             string     `json:"id"`
+	Properties     Properties `json:"properties"`
+	CreatedTime    string     `json:"created_time"`
+	LastEditedTime string     `json:"last_edited_time"`
 }
 
 type Properties map[string]Property
@@ -120,6 +126,9 @@ type Property struct {
 	MultiSelect []NamedValue    `json:"multi_select"`
 	Checkbox    *bool           `json:"checkbox"`
 	Formula     *FormulaValue   `json:"formula"`
+	People      []User          `json:"people"`
+	Relation    []PageReference `json:"relation"`
+	HasMore     bool            `json:"has_more"`
 	Raw         map[string]any  `json:"-"`
 }
 
@@ -138,6 +147,23 @@ type FormulaValue struct {
 	Number *float64    `json:"number"`
 	Bool   *bool       `json:"boolean"`
 	Raw    interface{} `json:"-"`
+}
+
+type User struct {
+	Object    string       `json:"object"`
+	ID        string       `json:"id"`
+	Name      string       `json:"name"`
+	AvatarURL string       `json:"avatar_url"`
+	Type      string       `json:"type"`
+	Person    *PersonValue `json:"person"`
+}
+
+type PersonValue struct {
+	Email string `json:"email"`
+}
+
+type PageReference struct {
+	ID string `json:"id"`
 }
 
 type listResponse[T any] struct {
@@ -267,6 +293,20 @@ func (c *Client) QueryDataSource(ctx context.Context, dataSourceID string, query
 		}
 		cursor = payload.NextCursor
 	}
+}
+
+func (c *Client) RetrievePage(ctx context.Context, pageID string, request RetrievePageRequest) (Page, error) {
+	queryParams := url.Values{}
+	for _, property := range request.FilterProperties {
+		queryParams.Add("filter_properties[]", property)
+	}
+
+	var page Page
+	path := fmt.Sprintf("/pages/%s", url.PathEscape(pageID))
+	if err := c.doJSON(ctx, http.MethodGet, path, queryParams, nil, &page); err != nil {
+		return Page{}, fmt.Errorf("retrieve Notion page %s: %w", pageID, err)
+	}
+	return page, nil
 }
 
 func (c *Client) doJSON(ctx context.Context, method, path string, query url.Values, requestBody any, responseBody any) error {

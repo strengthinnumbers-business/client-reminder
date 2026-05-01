@@ -113,6 +113,90 @@ func TestQueryDataSourcePaginatesAndUsesFilterProperties(t *testing.T) {
 	}
 }
 
+func TestRetrievePageUsesFilterPropertiesAndDecodesPeopleAndRelation(t *testing.T) {
+	httpClient := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		if got, want := r.Method, http.MethodGet; got != want {
+			t.Fatalf("unexpected method: got %s want %s", got, want)
+		}
+		if got, want := r.URL.Path, "/v1/pages/page-1"; got != want {
+			t.Fatalf("unexpected path: got %s want %s", got, want)
+		}
+		filterProperties := r.URL.Query()["filter_properties[]"]
+		if len(filterProperties) != 2 || filterProperties[0] != "Owner" || filterProperties[1] != "Project" {
+			t.Fatalf("unexpected filter_properties: %+v", filterProperties)
+		}
+
+		return jsonResponse(http.StatusOK, map[string]any{
+			"object": "page",
+			"id":     "page-1",
+			"properties": map[string]any{
+				"Owner": map[string]any{
+					"id":   "owner",
+					"type": "people",
+					"people": []map[string]any{
+						{
+							"object":     "user",
+							"id":         "user-1",
+							"name":       "Ada Lovelace",
+							"avatar_url": nil,
+							"type":       "person",
+							"person": map[string]any{
+								"email": "ada@example.com",
+							},
+						},
+					},
+				},
+				"Project": map[string]any{
+					"id":   "project",
+					"type": "relation",
+					"relation": []map[string]any{
+						{"id": "related-page-1"},
+					},
+					"has_more": false,
+				},
+			},
+		}), nil
+	})}
+
+	page, err := New("secret", WithBaseURL("https://api.notion.test/v1"), WithHTTPClient(httpClient), WithRequestGap(0)).RetrievePage(context.Background(), "page-1", RetrievePageRequest{
+		FilterProperties: []string{"Owner", "Project"},
+	})
+	if err != nil {
+		t.Fatalf("RetrievePage returned error: %v", err)
+	}
+
+	owner := page.Properties["Owner"]
+	if got, want := owner.Type, "people"; got != want {
+		t.Fatalf("unexpected owner type: got %s want %s", got, want)
+	}
+	if len(owner.People) != 1 {
+		t.Fatalf("expected one owner, got %+v", owner.People)
+	}
+	if got, want := owner.People[0].Name, "Ada Lovelace"; got != want {
+		t.Fatalf("unexpected owner name: got %s want %s", got, want)
+	}
+	if owner.People[0].Person == nil {
+		t.Fatal("expected owner person details")
+	}
+	if got, want := owner.People[0].Person.Email, "ada@example.com"; got != want {
+		t.Fatalf("unexpected owner email: got %s want %s", got, want)
+	}
+
+	project := page.Properties["Project"]
+	if got, want := project.Type, "relation"; got != want {
+		t.Fatalf("unexpected project type: got %s want %s", got, want)
+	}
+	if len(project.Relation) != 1 {
+		t.Fatalf("expected one relation, got %+v", project.Relation)
+	}
+	if got, want := project.Relation[0].ID, "related-page-1"; got != want {
+		t.Fatalf("unexpected related page ID: got %s want %s", got, want)
+	}
+	if project.HasMore {
+		t.Fatal("expected relation has_more to be false")
+	}
+}
+
 func TestClientWaitsBetweenRequests(t *testing.T) {
 	var requestTimes []time.Time
 	httpClient := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {

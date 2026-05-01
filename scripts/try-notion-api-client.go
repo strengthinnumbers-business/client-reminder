@@ -20,6 +20,7 @@ type cli struct {
 
 	FindDataSourceIDByTitle findDataSourceIDByTitleCmd `cmd:"" name:"find-data-source-id-by-title" help:"Find a Notion data source ID by exact title."`
 	QueryDataSource         queryDataSourceCmd         `cmd:"" name:"query-data-source" help:"Query a Notion data source with an empty query."`
+	RetrievePage            retrievePageCmd            `cmd:"" name:"retrieve-page" help:"Retrieve a Notion page by ID."`
 }
 
 type findDataSourceIDByTitleCmd struct {
@@ -28,6 +29,10 @@ type findDataSourceIDByTitleCmd struct {
 
 type queryDataSourceCmd struct {
 	DataSourceID string `arg:"" name:"data-source-id" help:"Notion data source ID to query."`
+}
+
+type retrievePageCmd struct {
+	PageID string `arg:"" name:"page-id" help:"Notion page ID to retrieve."`
 }
 
 func main() {
@@ -86,4 +91,14 @@ func (cmd *queryDataSourceCmd) Run(client *notionapi.Client, out io.Writer) erro
 	encoder := json.NewEncoder(out)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(pages)
+}
+
+func (cmd *retrievePageCmd) Run(client *notionapi.Client, out io.Writer) error {
+	page, err := client.RetrievePage(context.Background(), cmd.PageID, notionapi.RetrievePageRequest{})
+	if err != nil {
+		return err
+	}
+	encoder := json.NewEncoder(out)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(page)
 }
