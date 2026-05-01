@@ -48,6 +48,16 @@ type RetrievePageRequest struct {
 	FilterProperties []string
 }
 
+type CreatePageRequest struct {
+	DataSourceID string
+	Properties   PagePropertyUpdates
+}
+
+type UpdatePageSelectRequest struct {
+	PropertyName string
+	SelectName   string
+}
+
 type SearchResult struct {
 	Object string          `json:"object"`
 	ID     string          `json:"id"`
@@ -168,6 +178,48 @@ type PersonValue struct {
 
 type PageReference struct {
 	ID string `json:"id"`
+}
+
+type PagePropertyUpdates map[string]PagePropertyUpdate
+
+type PagePropertyUpdate struct {
+	Title    []RichTextInput `json:"title,omitempty"`
+	RichText []RichTextInput `json:"rich_text,omitempty"`
+	Relation []PageReference `json:"relation,omitempty"`
+	Select   *SelectInput    `json:"select,omitempty"`
+}
+
+type RichTextInput struct {
+	Text TextInput `json:"text"`
+}
+
+type TextInput struct {
+	Content string `json:"content"`
+}
+
+type SelectInput struct {
+	Name string `json:"name,omitempty"`
+	ID   string `json:"id,omitempty"`
+}
+
+func TitleProperty(content string) PagePropertyUpdate {
+	return PagePropertyUpdate{Title: []RichTextInput{{Text: TextInput{Content: content}}}}
+}
+
+func RichTextProperty(content string) PagePropertyUpdate {
+	return PagePropertyUpdate{RichText: []RichTextInput{{Text: TextInput{Content: content}}}}
+}
+
+func RelationProperty(pageIDs ...string) PagePropertyUpdate {
+	references := make([]PageReference, 0, len(pageIDs))
+	for _, pageID := range pageIDs {
+		references = append(references, PageReference{ID: pageID})
+	}
+	return PagePropertyUpdate{Relation: references}
+}
+
+func SelectProperty(name string) PagePropertyUpdate {
+	return PagePropertyUpdate{Select: &SelectInput{Name: name}}
 }
 
 type listResponse[T any] struct {
@@ -309,6 +361,37 @@ func (c *Client) RetrievePage(ctx context.Context, pageID string, request Retrie
 	path := fmt.Sprintf("/pages/%s", url.PathEscape(pageID))
 	if err := c.doJSON(ctx, http.MethodGet, path, queryParams, nil, &page); err != nil {
 		return Page{}, fmt.Errorf("retrieve Notion page %s: %w", pageID, err)
+	}
+	return page, nil
+}
+
+func (c *Client) CreatePage(ctx context.Context, request CreatePageRequest) (Page, error) {
+	body := map[string]any{
+		"parent": map[string]string{
+			"type":           "data_source_id",
+			"data_source_id": request.DataSourceID,
+		},
+		"properties": request.Properties,
+	}
+
+	var page Page
+	if err := c.doJSON(ctx, http.MethodPost, "/pages", nil, body, &page); err != nil {
+		return Page{}, fmt.Errorf("create Notion page in data source %s: %w", request.DataSourceID, err)
+	}
+	return page, nil
+}
+
+func (c *Client) UpdatePageSelect(ctx context.Context, pageID string, request UpdatePageSelectRequest) (Page, error) {
+	body := map[string]any{
+		"properties": PagePropertyUpdates{
+			request.PropertyName: SelectProperty(request.SelectName),
+		},
+	}
+
+	var page Page
+	path := fmt.Sprintf("/pages/%s", url.PathEscape(pageID))
+	if err := c.doJSON(ctx, http.MethodPatch, path, nil, body, &page); err != nil {
+		return Page{}, fmt.Errorf("update Notion page %s select property %q: %w", pageID, request.PropertyName, err)
 	}
 	return page, nil
 }

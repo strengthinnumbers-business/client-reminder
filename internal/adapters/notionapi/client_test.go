@@ -197,6 +197,116 @@ func TestRetrievePageUsesFilterPropertiesAndDecodesPeopleAndRelation(t *testing.
 	}
 }
 
+func TestCreatePageCreatesChildOfDataSourceWithSupportedProperties(t *testing.T) {
+	httpClient := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		if got, want := r.Method, http.MethodPost; got != want {
+			t.Fatalf("unexpected method: got %s want %s", got, want)
+		}
+		if got, want := r.URL.Path, "/v1/pages"; got != want {
+			t.Fatalf("unexpected path: got %s want %s", got, want)
+		}
+
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		assertJSONEqual(t, body, map[string]any{
+			"parent": map[string]any{
+				"type":           "data_source_id",
+				"data_source_id": "ds-1",
+			},
+			"properties": map[string]any{
+				"Name": map[string]any{
+					"title": []any{
+						map[string]any{"text": map[string]any{"content": "Acme"}},
+					},
+				},
+				"Notes": map[string]any{
+					"rich_text": []any{
+						map[string]any{"text": map[string]any{"content": "Bring CSVs"}},
+					},
+				},
+				"Client": map[string]any{
+					"relation": []any{
+						map[string]any{"id": "client-page-1"},
+					},
+				},
+				"Status": map[string]any{
+					"select": map[string]any{"name": "Open"},
+				},
+			},
+		})
+
+		return jsonResponse(http.StatusOK, map[string]any{
+			"object":     "page",
+			"id":         "page-1",
+			"properties": map[string]any{},
+		}), nil
+	})}
+
+	page, err := New("secret", WithBaseURL("https://api.notion.test/v1"), WithHTTPClient(httpClient), WithRequestGap(0)).CreatePage(context.Background(), CreatePageRequest{
+		DataSourceID: "ds-1",
+		Properties: PagePropertyUpdates{
+			"Name":   TitleProperty("Acme"),
+			"Notes":  RichTextProperty("Bring CSVs"),
+			"Client": RelationProperty("client-page-1"),
+			"Status": SelectProperty("Open"),
+		},
+	})
+	if err != nil {
+		t.Fatalf("CreatePage returned error: %v", err)
+	}
+	if page.ID != "page-1" {
+		t.Fatalf("unexpected page ID: got %s want page-1", page.ID)
+	}
+}
+
+func TestUpdatePageSelectUpdatesSingleSelectProperty(t *testing.T) {
+	httpClient := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		if got, want := r.Method, http.MethodPatch; got != want {
+			t.Fatalf("unexpected method: got %s want %s", got, want)
+		}
+		if got, want := r.URL.Path, "/v1/pages/page-1"; got != want {
+			t.Fatalf("unexpected path: got %s want %s", got, want)
+		}
+
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		assertJSONEqual(t, body, map[string]any{
+			"properties": map[string]any{
+				"Status": map[string]any{
+					"select": map[string]any{"name": "Done"},
+				},
+			},
+		})
+
+		return jsonResponse(http.StatusOK, map[string]any{
+			"object": "page",
+			"id":     "page-1",
+			"properties": map[string]any{
+				"Status": map[string]any{
+					"id":     "status",
+					"type":   "select",
+					"select": map[string]any{"name": "Done"},
+				},
+			},
+		}), nil
+	})}
+
+	page, err := New("secret", WithBaseURL("https://api.notion.test/v1"), WithHTTPClient(httpClient), WithRequestGap(0)).UpdatePageSelect(context.Background(), "page-1", UpdatePageSelectRequest{
+		PropertyName: "Status",
+		SelectName:   "Done",
+	})
+	if err != nil {
+		t.Fatalf("UpdatePageSelect returned error: %v", err)
+	}
+	if got, want := page.Properties.Text("Status"), "Done"; got != want {
+		t.Fatalf("unexpected status: got %s want %s", got, want)
+	}
+}
+
 func TestClientWaitsBetweenRequests(t *testing.T) {
 	var requestTimes []time.Time
 	httpClient := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
@@ -283,5 +393,21 @@ func jsonResponse(statusCode int, payload any) *http.Response {
 		Status:     http.StatusText(statusCode),
 		Header:     make(http.Header),
 		Body:       io.NopCloser(&body),
+	}
+}
+
+func assertJSONEqual(t *testing.T, got, want any) {
+	t.Helper()
+
+	gotJSON, err := json.Marshal(got)
+	if err != nil {
+		t.Fatalf("marshal got JSON: %v", err)
+	}
+	wantJSON, err := json.Marshal(want)
+	if err != nil {
+		t.Fatalf("marshal want JSON: %v", err)
+	}
+	if !bytes.Equal(gotJSON, wantJSON) {
+		t.Fatalf("unexpected JSON:\ngot  %s\nwant %s", gotJSON, wantJSON)
 	}
 }

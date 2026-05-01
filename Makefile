@@ -45,6 +45,30 @@ retrieve-page:
 	--notion-api-key "$(NOTION_API_KEY)" \
 	retrieve-page "$(PAGE_ID)"
 
+.PHONY: create-task
+create-task:
+	go run scripts/try-notion-api-client.go \
+	--notion-api-key "$(NOTION_API_KEY)" \
+	create-task-page \
+	--data-source-id="$(NOTION_TASKS_DATA_SOURCE_ID)" \
+	--title-property="Title" \
+	--title="2026-04: Test Reminder Client A" \
+	--rich-text-property="Period Key" \
+	--rich-text="2026-04" \
+	--relation-property="Reminder Client" \
+	--related-page-id="$(NOTION_TEST_CLIENT_ID_A)" \
+	--select-property="Status" \
+	--select="unset"
+
+.PHONY: update-task
+update-task:
+	go run scripts/try-notion-api-client.go \
+	--notion-api-key "$(NOTION_API_KEY)" \
+	update-task-page \
+	--page-id="$(PAGE_ID)" \
+	--select-property="Status" \
+	--select="upload_complete"
+
 
 #############################################################################
 # The following targets are for testing the "integration" between the       #
