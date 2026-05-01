@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -50,9 +51,60 @@ type SearchResult struct {
 }
 
 type Page struct {
-	Object     string              `json:"object"`
-	ID         string              `json:"id"`
-	Properties map[string]Property `json:"properties"`
+	Object     string     `json:"object"`
+	ID         string     `json:"id"`
+	Properties Properties `json:"properties"`
+}
+
+type Properties map[string]Property
+
+func (p Properties) Text(name string) string {
+	property, ok := p[name]
+	if !ok {
+		return ""
+	}
+
+	switch property.Type {
+	case "title":
+		return plainText(property.Title)
+	case "rich_text":
+		return plainText(property.RichText)
+	case "email":
+		return property.Email
+	case "url":
+		return property.URL
+	case "select":
+		if property.Select != nil {
+			return property.Select.Name
+		}
+	case "status":
+		if property.Status != nil {
+			return property.Status.Name
+		}
+	case "multi_select":
+		values := make([]string, 0, len(property.MultiSelect))
+		for _, value := range property.MultiSelect {
+			values = append(values, value.Name)
+		}
+		return strings.Join(values, ",")
+	case "number":
+		if property.Number != nil {
+			if *property.Number == float64(int(*property.Number)) {
+				return strconv.Itoa(int(*property.Number))
+			}
+			return strconv.FormatFloat(*property.Number, 'f', -1, 64)
+		}
+	case "checkbox":
+		if property.Checkbox != nil {
+			return strconv.FormatBool(*property.Checkbox)
+		}
+	case "formula":
+		if property.Formula != nil {
+			return formulaText(*property.Formula)
+		}
+	}
+
+	return ""
 }
 
 type Property struct {
@@ -352,4 +404,20 @@ func plainText(values []RichTextValue) string {
 		out += value.PlainText
 	}
 	return out
+}
+
+func formulaText(value FormulaValue) string {
+	switch value.Type {
+	case "string":
+		return value.String
+	case "number":
+		if value.Number != nil {
+			return strconv.FormatFloat(*value.Number, 'f', -1, 64)
+		}
+	case "boolean":
+		if value.Bool != nil {
+			return strconv.FormatBool(*value.Bool)
+		}
+	}
+	return ""
 }

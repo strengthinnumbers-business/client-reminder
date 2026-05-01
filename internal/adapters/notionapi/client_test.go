@@ -141,6 +141,48 @@ func TestClientWaitsBetweenRequests(t *testing.T) {
 	}
 }
 
+func TestPropertiesTextExtractsSupportedPropertyValues(t *testing.T) {
+	number := 12.5
+	wholeNumber := 12.0
+	checked := true
+	formulaNumber := 7.0
+
+	properties := Properties{
+		"title":        {Type: "title", Title: []RichTextValue{{PlainText: "Acme"}, {PlainText: " Corp"}}},
+		"rich_text":    {Type: "rich_text", RichText: []RichTextValue{{PlainText: "Hello"}}},
+		"email":        {Type: "email", Email: "ops@acme.example"},
+		"url":          {Type: "url", URL: "https://files.example.com/acme"},
+		"select":       {Type: "select", Select: &NamedValue{Name: "monthly"}},
+		"status":       {Type: "status", Status: &NamedValue{Name: "active"}},
+		"multi_select": {Type: "multi_select", MultiSelect: []NamedValue{{Name: "one"}, {Name: "two"}}},
+		"number":       {Type: "number", Number: &number},
+		"whole_number": {Type: "number", Number: &wholeNumber},
+		"checkbox":     {Type: "checkbox", Checkbox: &checked},
+		"formula":      {Type: "formula", Formula: &FormulaValue{Type: "number", Number: &formulaNumber}},
+	}
+
+	tests := map[string]string{
+		"title":        "Acme Corp",
+		"rich_text":    "Hello",
+		"email":        "ops@acme.example",
+		"url":          "https://files.example.com/acme",
+		"select":       "monthly",
+		"status":       "active",
+		"multi_select": "one,two",
+		"number":       "12.5",
+		"whole_number": "12",
+		"checkbox":     "true",
+		"formula":      "7",
+		"missing":      "",
+	}
+
+	for name, want := range tests {
+		if got := properties.Text(name); got != want {
+			t.Fatalf("Properties.Text(%q) = %q, want %q", name, got, want)
+		}
+	}
+}
+
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {

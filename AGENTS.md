@@ -43,4 +43,6 @@ Log all errors to allow diagnosing any failed operation, if available with added
 
 Shared sparse Notion API code lives in `./internal/adapters/notionapi` so multiple outer adapters can reuse it without leaking Notion request / response details into core ports. It only supports the endpoints this app needs, uses internal-connection tokens from `NOTION_API_KEY`, sends the current `Notion-Version` header, and spaces every API request at least 333 ms after the previous request ends.
 
-Notion-backed client configuration lives in `./internal/adapters/client/notion`. Keep Notion field-name mapping configurable there; the default field names mirror `entities.Client` plus a `Status` field. Client queries should filter Notion `Status` to `active`, and the repository should return core `entities.Client` values only.
+Notion property shape helpers belong in `./internal/adapters/notionapi`; use `notionapi.Properties.Text(name)` to extract common text-like values from Notion properties instead of duplicating property-type switches in outer adapters.
+
+Notion-backed client configuration lives in `./internal/adapters/client/notion`. Keep Notion field-name mapping configurable there; the default field names mirror the current Notion information architecture and include `Contact Email`, `Period Type`, `Schedule Preset`, and `Status`. Client queries should filter Notion `Status` to `active`, and the repository should return core `entities.Client` values only.

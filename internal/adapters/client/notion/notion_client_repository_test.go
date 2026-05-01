@@ -15,13 +15,13 @@ func TestClientRepositoryQueriesOnlyActiveClientsAndMapsFields(t *testing.T) {
 		pages: []notionapi.Page{
 			{
 				ID: "page-1",
-				Properties: map[string]notionapi.Property{
+				Properties: notionapi.Properties{
 					"ID":              richTextProperty("customer-a"),
 					"Name":            titleProperty("Acme Corp"),
 					"Period Type":     selectProperty("monthly"),
 					"Schedule Preset": selectProperty("standard"),
 					"Region":          selectProperty("AB"),
-					"Email":           emailProperty("ops@acme.example"),
+					"Contact Email":   emailProperty("ops@acme.example"),
 					"Email Style":     selectProperty("standard"),
 					"Greeting":        richTextProperty("Hello Acme Team,"),
 					"Folder URL":      urlProperty("https://files.example.com/acme"),
@@ -51,7 +51,7 @@ func TestClientRepositoryQueriesOnlyActiveClientsAndMapsFields(t *testing.T) {
 
 	want := []entities.Client{
 		{
-			ID:           "customer-a",
+			ID:           "page-1",
 			Name:         "Acme Corp",
 			PeriodType:   entities.PeriodMonthly,
 			ReminderGaps: entities.MinimumBusinessDayGaps{0, 2, 2},
@@ -74,9 +74,9 @@ func TestClientRepositoryResolvesDataSourceNameAndDefaultsReminderGaps(t *testin
 		pages: []notionapi.Page{
 			{
 				ID: "page-1",
-				Properties: map[string]notionapi.Property{
-					"Name":       titleProperty("Acme Corp"),
-					"PeriodType": numberProperty(2),
+				Properties: notionapi.Properties{
+					"Name":        titleProperty("Acme Corp"),
+					"Period Type": numberProperty(2),
 				},
 			},
 		},

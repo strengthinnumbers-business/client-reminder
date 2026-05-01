@@ -99,12 +99,12 @@ func (r *ClientRepository) resolveDataSourceID(ctx context.Context) (string, err
 }
 
 func (r *ClientRepository) clientFromPage(page notionapi.Page) (entities.Client, error) {
-	periodType, err := parsePeriodType(propertyText(page.Properties, r.fields.PeriodType))
+	periodType, err := parsePeriodType(page.Properties.Text(r.fields.PeriodType))
 	if err != nil {
 		return entities.Client{}, fmt.Errorf("%s: %w", r.fields.PeriodType, err)
 	}
 
-	gaps, err := parseReminderGaps(propertyText(page.Properties, r.fields.ReminderGaps))
+	gaps, err := parseReminderGaps(page.Properties.Text(r.fields.ReminderGaps))
 	if err != nil {
 		return entities.Client{}, fmt.Errorf("%s: %w", r.fields.ReminderGaps, err)
 	}
@@ -114,15 +114,15 @@ func (r *ClientRepository) clientFromPage(page notionapi.Page) (entities.Client,
 
 	return entities.Client{
 		ID:           page.ID,
-		Name:         propertyText(page.Properties, r.fields.Name),
+		Name:         page.Properties.Text(r.fields.Name),
 		PeriodType:   periodType,
 		ReminderGaps: gaps,
-		Region:       entities.ClientRegion(propertyText(page.Properties, r.fields.Region)),
-		Email:        propertyText(page.Properties, r.fields.Email),
-		EmailStyle:   propertyText(page.Properties, r.fields.EmailStyle),
-		Greeting:     propertyText(page.Properties, r.fields.Greeting),
-		FolderURL:    propertyText(page.Properties, r.fields.FolderURL),
-		UploadPrompt: propertyText(page.Properties, r.fields.UploadPrompt),
+		Region:       entities.ClientRegion(page.Properties.Text(r.fields.Region)),
+		Email:        page.Properties.Text(r.fields.Email),
+		EmailStyle:   page.Properties.Text(r.fields.EmailStyle),
+		Greeting:     page.Properties.Text(r.fields.Greeting),
+		FolderURL:    page.Properties.Text(r.fields.FolderURL),
+		UploadPrompt: page.Properties.Text(r.fields.UploadPrompt),
 	}, nil
 }
 
@@ -176,79 +176,6 @@ func (m FieldMapping) filterProperties() []string {
 		m.UploadPrompt,
 		m.Status,
 	}
-}
-
-func propertyText(properties map[string]notionapi.Property, name string) string {
-	property, ok := properties[name]
-	if !ok {
-		return ""
-	}
-
-	switch property.Type {
-	case "title":
-		return richText(property.Title)
-	case "rich_text":
-		return richText(property.RichText)
-	case "email":
-		return property.Email
-	case "url":
-		return property.URL
-	case "select":
-		if property.Select != nil {
-			return property.Select.Name
-		}
-	case "status":
-		if property.Status != nil {
-			return property.Status.Name
-		}
-	case "multi_select":
-		values := make([]string, 0, len(property.MultiSelect))
-		for _, value := range property.MultiSelect {
-			values = append(values, value.Name)
-		}
-		return strings.Join(values, ",")
-	case "number":
-		if property.Number != nil {
-			if *property.Number == float64(int(*property.Number)) {
-				return strconv.Itoa(int(*property.Number))
-			}
-			return strconv.FormatFloat(*property.Number, 'f', -1, 64)
-		}
-	case "checkbox":
-		if property.Checkbox != nil {
-			return strconv.FormatBool(*property.Checkbox)
-		}
-	case "formula":
-		if property.Formula != nil {
-			return formulaText(*property.Formula)
-		}
-	}
-
-	return ""
-}
-
-func richText(values []notionapi.RichTextValue) string {
-	var out strings.Builder
-	for _, value := range values {
-		out.WriteString(value.PlainText)
-	}
-	return out.String()
-}
-
-func formulaText(value notionapi.FormulaValue) string {
-	switch value.Type {
-	case "string":
-		return value.String
-	case "number":
-		if value.Number != nil {
-			return strconv.FormatFloat(*value.Number, 'f', -1, 64)
-		}
-	case "boolean":
-		if value.Bool != nil {
-			return strconv.FormatBool(*value.Bool)
-		}
-	}
-	return ""
 }
 
 func parsePeriodType(value string) (entities.PeriodType, error) {
