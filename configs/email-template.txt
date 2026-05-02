@@ -1,11 +1,13 @@
 {{Greeting}}
 
-This is your reminder for period {{PeriodID}}.
+This is your reminder to upload the following data for period {{PeriodID}}:
 
 {{UploadPrompt}}
 
-Shared folder: {{FolderURL}}
+Please upload into this shared folder: {{FolderURL}}
 
 Thanks,
-Client Reminder Bot
+The Upload Reminder Bot for
+Strength In Numbers
+
 Run date: {{RunDate}}

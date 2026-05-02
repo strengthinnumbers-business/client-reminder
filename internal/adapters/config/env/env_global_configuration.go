@@ -14,6 +14,7 @@ func New(templatePath string) *GlobalConfiguration {
 }
 
 func (c *GlobalConfiguration) GetEmailBodyTemplate(sequenceIndex int, style string) (string, string, error) {
+	// TODO: use sequenceIndex and style to select different templates if needed
 	_ = sequenceIndex
 	_ = style
 
