@@ -29,6 +29,8 @@ type HolidayChecker struct {
 	mu       sync.Mutex
 }
 
+type Option func(*HolidayChecker)
+
 type cachedProvinceHolidays struct {
 	FetchedAt time.Time `json:"fetchedAt"`
 	Holidays  []string  `json:"holidays"`
@@ -47,30 +49,53 @@ type holiday struct {
 	ObservedDate string `json:"observedDate"`
 }
 
-func New(cacheDir string) *HolidayChecker {
-	return NewWithOptions(defaultBaseURL, cacheDir, defaultCacheTTL, nil, nil)
+func New(cacheDir string, options ...Option) *HolidayChecker {
+	c := &HolidayChecker{
+		baseURL:  defaultBaseURL,
+		cacheDir: cacheDir,
+		cacheTTL: defaultCacheTTL,
+		client:   &http.Client{Timeout: 10 * time.Second},
+		clock:    time.Now,
+	}
+	for _, option := range options {
+		option(c)
+	}
+	return c
 }
 
 func NewWithOptions(baseURL, cacheDir string, cacheTTL time.Duration, client *http.Client, clock Clock) *HolidayChecker {
-	if baseURL == "" {
-		baseURL = defaultBaseURL
-	}
-	if cacheTTL <= 0 {
-		cacheTTL = defaultCacheTTL
-	}
-	if client == nil {
-		client = &http.Client{Timeout: 10 * time.Second}
-	}
-	if clock == nil {
-		clock = time.Now
-	}
+	return New(cacheDir, WithBaseURL(baseURL), WithCacheTTL(cacheTTL), WithHTTPClient(client), WithClock(clock))
+}
 
-	return &HolidayChecker{
-		baseURL:  baseURL,
-		cacheDir: cacheDir,
-		cacheTTL: cacheTTL,
-		client:   client,
-		clock:    clock,
+func WithBaseURL(baseURL string) Option {
+	return func(c *HolidayChecker) {
+		if baseURL != "" {
+			c.baseURL = baseURL
+		}
+	}
+}
+
+func WithCacheTTL(cacheTTL time.Duration) Option {
+	return func(c *HolidayChecker) {
+		if cacheTTL > 0 {
+			c.cacheTTL = cacheTTL
+		}
+	}
+}
+
+func WithHTTPClient(client *http.Client) Option {
+	return func(c *HolidayChecker) {
+		if client != nil {
+			c.client = client
+		}
+	}
+}
+
+func WithClock(clock Clock) Option {
+	return func(c *HolidayChecker) {
+		if clock != nil {
+			c.clock = clock
+		}
 	}
 }
 

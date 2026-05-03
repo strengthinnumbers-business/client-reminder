@@ -52,9 +52,14 @@ func TestHolidayCheckerUsesObservedDate(t *testing.T) {
 		}, nil
 	})}
 
-	checker := canadaholidaysapi.NewWithOptions("https://example.test", "", time.Hour, client, func() time.Time {
-		return time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
-	})
+	checker := canadaholidaysapi.New("",
+		canadaholidaysapi.WithBaseURL("https://example.test"),
+		canadaholidaysapi.WithCacheTTL(time.Hour),
+		canadaholidaysapi.WithHTTPClient(client),
+		canadaholidaysapi.WithClock(func() time.Time {
+			return time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
+		}),
+	)
 
 	isHoliday, err := checker.IsHoliday(time.Date(2026, time.December, 28, 12, 0, 0, 0, time.UTC), entities.RegionOntario)
 	if err != nil {
@@ -98,9 +103,14 @@ func TestHolidayCheckerCachesProvinceYearLookups(t *testing.T) {
 	})}
 
 	now := time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
-	checker := canadaholidaysapi.NewWithOptions("https://example.test", cacheDir, 31*24*time.Hour, client, func() time.Time {
-		return now
-	})
+	checker := canadaholidaysapi.New(cacheDir,
+		canadaholidaysapi.WithBaseURL("https://example.test"),
+		canadaholidaysapi.WithCacheTTL(31*24*time.Hour),
+		canadaholidaysapi.WithHTTPClient(client),
+		canadaholidaysapi.WithClock(func() time.Time {
+			return now
+		}),
+	)
 
 	for i := 0; i < 2; i++ {
 		isHoliday, err := checker.IsHoliday(time.Date(2026, time.July, 1, 8, 0, 0, 0, time.UTC), entities.RegionOntario)

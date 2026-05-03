@@ -48,7 +48,7 @@ func BuildServiceForDemo() (*service.ReminderService, error) {
 	clientRepo := clientnotion.New(notionClient, notionDataSourceIDClients, clientnotion.FieldMapping{})
 	completionDecider := completionnotion.New(notionClient, notionDataSourceIDTasks, completionnotion.FieldMapping{})
 	config := configenv.New(templatePath)
-	holidayChecker := holidaycanada.New(holidayCacheDir)
+	holidayChecker := holidaycanada.New(holidayCacheDir, holidaycanada.WithCacheTTL(5*365*24*time.Hour))
 	reminderSendRepo := remindersendjson.New(reminderSendStatePath)
 	periodResolutionRepo := periodresolutionjson.New(periodResolutionStatePath)
 	adminAlerter := adminalertemail.New(emailSender, adminEmail)

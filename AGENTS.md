@@ -24,9 +24,13 @@ You can find all business entities [here](./internal/core/entities).
 
 When building this app, please set the GOCACHE env var to an absolute path pointing at the `./.gocache` sub-dir to avoid sandbox issues.
 
+Demo-specific wiring lives in `./internal/bootstrap/wire-demo.go` and the demo entrypoint lives in `./cmd/demo-client-reminder/main.go`. The app supports injecting the current timestamp through an environment variable for deterministic demos; keep demo-only wiring outside the core and inject diagnostic logging so production can use a no-op implementation. The demo is expected to run end-to-end against test Notion data and a real inbox, so demo affordances should make Notion-sourced client and upload-review-task changes visibly explain resulting email behavior.
+
 Standalone development helper scripts live in `./scripts`. Keep them self-contained and runnable with `go run`; for example, `scripts/print-calendar-comments.go` prints pasteable Go-comment calendars for scheduling tests. Scripts that need subcommands should use `github.com/alecthomas/kong`; bind interface-typed command dependencies with `kong.BindTo(value, (*Interface)(nil))`. `scripts/try-notion-api-client.go` manually exercises the sparse Notion API client against a real Notion connection and accepts `--notion-api-key` or falls back to `NOTION_API_KEY`; use its `retrieve-page --page-id PAGE_ID` subcommand to inspect full page property payloads, `create-task-page` to create a property-only task page under a data source, and `update-task-page` to update one select property on a task page. `scripts/try-notion-client-repository.go` manually exercises the composed Notion API client plus Notion-backed client repository with `--data-source-id` and prints mapped core clients as JSON.
 
 Adapter isolation should be tested in layers: fake the adapter's immediate dependency for fast mapping/contract tests, inject an `http.Client` or local test server for protocol-level tests, and use opt-in manual or integration helpers for real external services. Real-service helpers should live in `./scripts` or be guarded behind explicit environment variables/build tags so ordinary `go test ./...` stays deterministic and does not call the network.
+
+Adapter constructors that need optional test seams should prefer `New(required, options ...Option)` with `With...` option helpers, following `internal/adapters/notionapi`. For `internal/adapters/holiday/canadaholidaysapi`, keep `cacheDir` as the fixed first constructor parameter and configure base URL, cache TTL, HTTP client, and clock through options.
 
 Scheduling details and known edge cases are documented in:
 
