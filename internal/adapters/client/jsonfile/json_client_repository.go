@@ -6,14 +6,29 @@ import (
 	"os"
 
 	"github.com/strengthinnumbers-business/client-reminder/internal/core/entities"
+	"github.com/strengthinnumbers-business/client-reminder/internal/core/ports"
 )
 
 type ClientRepository struct {
-	path string
+	path   string
+	logger ports.Logger
 }
 
-func New(path string) *ClientRepository {
-	return &ClientRepository{path: path}
+type Option func(*ClientRepository)
+
+func New(path string, options ...Option) *ClientRepository {
+	r := &ClientRepository{path: path, logger: ports.NoopLogger{}}
+	for _, option := range options {
+		option(r)
+	}
+	r.logger = ports.EnsureLogger(r.logger)
+	return r
+}
+
+func WithLogger(logger ports.Logger) Option {
+	return func(r *ClientRepository) {
+		r.logger = ports.EnsureLogger(logger)
+	}
 }
 
 func (r *ClientRepository) GetAllClients() ([]entities.Client, error) {

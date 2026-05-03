@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	adminalertemail "github.com/strengthinnumbers-business/client-reminder/internal/adapters/adminalert/email"
 	clientjson "github.com/strengthinnumbers-business/client-reminder/internal/adapters/client/jsonfile"
@@ -10,8 +11,10 @@ import (
 	configenv "github.com/strengthinnumbers-business/client-reminder/internal/adapters/config/env"
 	emailsmtp "github.com/strengthinnumbers-business/client-reminder/internal/adapters/email/smtp"
 	holidaycanada "github.com/strengthinnumbers-business/client-reminder/internal/adapters/holiday/canadaholidaysapi"
+	slogadapter "github.com/strengthinnumbers-business/client-reminder/internal/adapters/logging/slog"
 	periodresolutionjson "github.com/strengthinnumbers-business/client-reminder/internal/adapters/periodresolution/jsonfile"
 	remindersendjson "github.com/strengthinnumbers-business/client-reminder/internal/adapters/remindersend/jsonfile"
+	"github.com/strengthinnumbers-business/client-reminder/internal/core/ports"
 	"github.com/strengthinnumbers-business/client-reminder/internal/core/service"
 )
 
@@ -40,14 +43,15 @@ func BuildServiceFromEnv() (*service.ReminderService, error) {
 		return nil, fmt.Errorf("ADMIN_EMAIL is required")
 	}
 
-	emailSender := emailsmtp.New(smtpHost, smtpPort, smtpUsername, smtpPassword, smtpFrom)
-	clientRepo := clientjson.New(clientsPath)
-	config := configenv.New(templatePath)
-	completionDecider := completionjson.New(completionStatePath)
-	holidayChecker := holidaycanada.New(holidayCacheDir)
-	reminderSendRepo := remindersendjson.New(reminderSendStatePath)
-	periodResolutionRepo := periodresolutionjson.New(periodResolutionStatePath)
-	adminAlerter := adminalertemail.New(emailSender, adminEmail)
+	logger := loggerFromEnv()
+	emailSender := emailsmtp.New(smtpHost, smtpPort, smtpUsername, smtpPassword, smtpFrom, emailsmtp.WithLogger(logger))
+	clientRepo := clientjson.New(clientsPath, clientjson.WithLogger(logger))
+	config := configenv.New(templatePath, configenv.WithLogger(logger))
+	completionDecider := completionjson.New(completionStatePath, completionjson.WithLogger(logger))
+	holidayChecker := holidaycanada.New(holidayCacheDir, holidaycanada.WithLogger(logger))
+	reminderSendRepo := remindersendjson.New(reminderSendStatePath, remindersendjson.WithLogger(logger))
+	periodResolutionRepo := periodresolutionjson.New(periodResolutionStatePath, periodresolutionjson.WithLogger(logger))
+	adminAlerter := adminalertemail.New(emailSender, adminEmail, adminalertemail.WithLogger(logger))
 
 	return service.NewReminderService(
 		emailSender,
@@ -59,6 +63,7 @@ func BuildServiceFromEnv() (*service.ReminderService, error) {
 		periodResolutionRepo,
 		adminAlerter,
 		nil,
+		service.WithLogger(logger),
 	), nil
 }
 
@@ -68,4 +73,21 @@ func envOrDefault(key, fallback string) string {
 		return fallback
 	}
 	return v
+}
+
+func loggerFromEnv() ports.Logger {
+	return slogadapter.NewText(os.Stderr, logLevelFromEnv())
+}
+
+func logLevelFromEnv() slogadapter.Level {
+	switch strings.ToLower(os.Getenv("LOG_LEVEL")) {
+	case "debug":
+		return slogadapter.LevelDebug
+	case "error":
+		return slogadapter.LevelError
+	case "info", "":
+		return slogadapter.LevelInfo
+	default:
+		return slogadapter.LevelInfo
+	}
 }

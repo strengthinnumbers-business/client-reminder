@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/strengthinnumbers-business/client-reminder/internal/core/entities"
+	"github.com/strengthinnumbers-business/client-reminder/internal/core/ports"
 )
 
 const (
@@ -26,6 +27,7 @@ type HolidayChecker struct {
 	cacheTTL time.Duration
 	client   *http.Client
 	clock    Clock
+	logger   ports.Logger
 	mu       sync.Mutex
 }
 
@@ -56,15 +58,18 @@ func New(cacheDir string, options ...Option) *HolidayChecker {
 		cacheTTL: defaultCacheTTL,
 		client:   &http.Client{Timeout: 10 * time.Second},
 		clock:    time.Now,
+		logger:   ports.NoopLogger{},
 	}
 	for _, option := range options {
 		option(c)
 	}
+	c.logger = ports.EnsureLogger(c.logger)
 	return c
 }
 
-func NewWithOptions(baseURL, cacheDir string, cacheTTL time.Duration, client *http.Client, clock Clock) *HolidayChecker {
-	return New(cacheDir, WithBaseURL(baseURL), WithCacheTTL(cacheTTL), WithHTTPClient(client), WithClock(clock))
+func NewWithOptions(baseURL, cacheDir string, cacheTTL time.Duration, client *http.Client, clock Clock, options ...Option) *HolidayChecker {
+	options = append([]Option{WithBaseURL(baseURL), WithCacheTTL(cacheTTL), WithHTTPClient(client), WithClock(clock)}, options...)
+	return New(cacheDir, options...)
 }
 
 func WithBaseURL(baseURL string) Option {
@@ -96,6 +101,12 @@ func WithClock(clock Clock) Option {
 		if clock != nil {
 			c.clock = clock
 		}
+	}
+}
+
+func WithLogger(logger ports.Logger) Option {
+	return func(c *HolidayChecker) {
+		c.logger = ports.EnsureLogger(logger)
 	}
 }
 

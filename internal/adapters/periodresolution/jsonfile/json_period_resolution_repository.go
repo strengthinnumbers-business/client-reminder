@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/strengthinnumbers-business/client-reminder/internal/core/entities"
+	"github.com/strengthinnumbers-business/client-reminder/internal/core/ports"
 )
 
 type record struct {
@@ -23,12 +24,26 @@ type state struct {
 }
 
 type PeriodResolutionRepository struct {
-	path string
-	mu   sync.Mutex
+	path   string
+	logger ports.Logger
+	mu     sync.Mutex
 }
 
-func New(path string) *PeriodResolutionRepository {
-	return &PeriodResolutionRepository{path: path}
+type Option func(*PeriodResolutionRepository)
+
+func New(path string, options ...Option) *PeriodResolutionRepository {
+	r := &PeriodResolutionRepository{path: path, logger: ports.NoopLogger{}}
+	for _, option := range options {
+		option(r)
+	}
+	r.logger = ports.EnsureLogger(r.logger)
+	return r
+}
+
+func WithLogger(logger ports.Logger) Option {
+	return func(r *PeriodResolutionRepository) {
+		r.logger = ports.EnsureLogger(logger)
+	}
 }
 
 func (r *PeriodResolutionRepository) IsDealtWith(client entities.Client, period entities.Period) (bool, error) {

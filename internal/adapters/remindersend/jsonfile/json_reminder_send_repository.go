@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/strengthinnumbers-business/client-reminder/internal/core/entities"
+	"github.com/strengthinnumbers-business/client-reminder/internal/core/ports"
 )
 
 type state struct {
@@ -16,12 +17,26 @@ type state struct {
 }
 
 type ReminderSendRepository struct {
-	path string
-	mu   sync.Mutex
+	path   string
+	logger ports.Logger
+	mu     sync.Mutex
 }
 
-func New(path string) *ReminderSendRepository {
-	return &ReminderSendRepository{path: path}
+type Option func(*ReminderSendRepository)
+
+func New(path string, options ...Option) *ReminderSendRepository {
+	r := &ReminderSendRepository{path: path, logger: ports.NoopLogger{}}
+	for _, option := range options {
+		option(r)
+	}
+	r.logger = ports.EnsureLogger(r.logger)
+	return r
+}
+
+func WithLogger(logger ports.Logger) Option {
+	return func(r *ReminderSendRepository) {
+		r.logger = ports.EnsureLogger(logger)
+	}
 }
 
 func (r *ReminderSendRepository) ListSuccessfulSends(client entities.Client, period entities.Period) ([]entities.SendLogEntry, error) {

@@ -45,6 +45,8 @@ Reminder send logs store `ClientID` directly on each `SendLogEntry`; JSON remind
 
 Log all errors to allow diagnosing any failed operation, if available with added context like client and period, etc.
 
+Application logging goes through the core-owned `ports.Logger` interface. The core and adapters must not use package-level `log`/`slog` directly; inject a logger with `WithLogger` constructor options and default to `ports.NoopLogger` when none is provided. The `internal/adapters/logging/slog` adapter is the real `log/slog` implementation; set its minimum level to `info` to make debug logging a no-op, or `error` to make debug and info logging no-ops.
+
 Shared sparse Notion API code lives in `./internal/adapters/notionapi` so multiple outer adapters can reuse it without leaking Notion request / response details into core ports. It only supports the endpoints this app needs, uses internal-connection tokens from `NOTION_API_KEY`, sends the current `Notion-Version` header, and spaces every API request at least 333 ms after the previous request ends.
 
 Notion property shape helpers belong in `./internal/adapters/notionapi`; use `notionapi.Properties.Text(name)` to extract common text-like values from Notion properties instead of duplicating property-type switches in outer adapters.

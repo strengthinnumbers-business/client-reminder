@@ -3,14 +3,30 @@ package env
 import (
 	"fmt"
 	"os"
+
+	"github.com/strengthinnumbers-business/client-reminder/internal/core/ports"
 )
 
 type GlobalConfiguration struct {
 	templatePath string
+	logger       ports.Logger
 }
 
-func New(templatePath string) *GlobalConfiguration {
-	return &GlobalConfiguration{templatePath: templatePath}
+type Option func(*GlobalConfiguration)
+
+func New(templatePath string, options ...Option) *GlobalConfiguration {
+	c := &GlobalConfiguration{templatePath: templatePath, logger: ports.NoopLogger{}}
+	for _, option := range options {
+		option(c)
+	}
+	c.logger = ports.EnsureLogger(c.logger)
+	return c
+}
+
+func WithLogger(logger ports.Logger) Option {
+	return func(c *GlobalConfiguration) {
+		c.logger = ports.EnsureLogger(logger)
+	}
 }
 
 func (c *GlobalConfiguration) GetEmailBodyTemplate(sequenceIndex int, style string) (string, string, error) {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/strengthinnumbers-business/client-reminder/internal/adapters/notionapi"
 	"github.com/strengthinnumbers-business/client-reminder/internal/core/entities"
+	"github.com/strengthinnumbers-business/client-reminder/internal/core/ports"
 )
 
 type APIClient interface {
@@ -34,21 +35,42 @@ type ClientRepository struct {
 	dataSourceID   string
 	dataSourceName string
 	fields         FieldMapping
+	logger         ports.Logger
 }
 
-func New(api APIClient, dataSourceID string, fields FieldMapping) *ClientRepository {
-	return &ClientRepository{
+type Option func(*ClientRepository)
+
+func New(api APIClient, dataSourceID string, fields FieldMapping, options ...Option) *ClientRepository {
+	r := &ClientRepository{
 		api:          api,
 		dataSourceID: dataSourceID,
 		fields:       fields.withDefaults(),
+		logger:       ports.NoopLogger{},
 	}
+	for _, option := range options {
+		option(r)
+	}
+	r.logger = ports.EnsureLogger(r.logger)
+	return r
 }
 
-func NewForDataSourceName(api APIClient, dataSourceName string, fields FieldMapping) *ClientRepository {
-	return &ClientRepository{
+func NewForDataSourceName(api APIClient, dataSourceName string, fields FieldMapping, options ...Option) *ClientRepository {
+	r := &ClientRepository{
 		api:            api,
 		dataSourceName: dataSourceName,
 		fields:         fields.withDefaults(),
+		logger:         ports.NoopLogger{},
+	}
+	for _, option := range options {
+		option(r)
+	}
+	r.logger = ports.EnsureLogger(r.logger)
+	return r
+}
+
+func WithLogger(logger ports.Logger) Option {
+	return func(r *ClientRepository) {
+		r.logger = ports.EnsureLogger(logger)
 	}
 }
 

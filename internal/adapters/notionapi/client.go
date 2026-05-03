@@ -14,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/strengthinnumbers-business/client-reminder/internal/core/ports"
 )
 
 const (
@@ -30,6 +32,7 @@ type Client struct {
 	notionVersion string
 	httpClient    *http.Client
 	requestGap    time.Duration
+	logger        ports.Logger
 
 	mu              sync.Mutex
 	previousCallEnd time.Time
@@ -244,10 +247,12 @@ func New(apiKey string, options ...Option) *Client {
 		notionVersion: DefaultNotionVersion,
 		httpClient:    &http.Client{Timeout: 15 * time.Second},
 		requestGap:    defaultRequestGap,
+		logger:        ports.NoopLogger{},
 	}
 	for _, option := range options {
 		option(c)
 	}
+	c.logger = ports.EnsureLogger(c.logger)
 	return c
 }
 
@@ -280,6 +285,12 @@ func WithNotionVersion(version string) Option {
 		if version != "" {
 			c.notionVersion = version
 		}
+	}
+}
+
+func WithLogger(logger ports.Logger) Option {
+	return func(c *Client) {
+		c.logger = ports.EnsureLogger(logger)
 	}
 }
 

@@ -8,17 +8,32 @@ import (
 	"sync"
 
 	"github.com/strengthinnumbers-business/client-reminder/internal/core/entities"
+	"github.com/strengthinnumbers-business/client-reminder/internal/core/ports"
 )
 
 type verdictMap map[string]entities.CompletionVerdict
 
 type CompletionDecider struct {
-	path string
-	mu   sync.Mutex
+	path   string
+	logger ports.Logger
+	mu     sync.Mutex
 }
 
-func New(path string) *CompletionDecider {
-	return &CompletionDecider{path: path}
+type Option func(*CompletionDecider)
+
+func New(path string, options ...Option) *CompletionDecider {
+	d := &CompletionDecider{path: path, logger: ports.NoopLogger{}}
+	for _, option := range options {
+		option(d)
+	}
+	d.logger = ports.EnsureLogger(d.logger)
+	return d
+}
+
+func WithLogger(logger ports.Logger) Option {
+	return func(d *CompletionDecider) {
+		d.logger = ports.EnsureLogger(logger)
+	}
 }
 
 func (d *CompletionDecider) IsCompleted(c entities.Client, p entities.Period) (entities.CompletionVerdict, error) {

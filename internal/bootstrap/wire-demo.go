@@ -43,15 +43,16 @@ func BuildServiceForDemo() (*service.ReminderService, error) {
 		return nil, fmt.Errorf("ADMIN_EMAIL is required")
 	}
 
-	emailSender := emailsmtp.New(smtpHost, smtpPort, smtpUsername, smtpPassword, smtpFrom)
-	notionClient := notionapi.New(notionAPIKey)
-	clientRepo := clientnotion.New(notionClient, notionDataSourceIDClients, clientnotion.FieldMapping{})
-	completionDecider := completionnotion.New(notionClient, notionDataSourceIDTasks, completionnotion.FieldMapping{})
-	config := configenv.New(templatePath)
-	holidayChecker := holidaycanada.New(holidayCacheDir, holidaycanada.WithCacheTTL(5*365*24*time.Hour))
-	reminderSendRepo := remindersendjson.New(reminderSendStatePath)
-	periodResolutionRepo := periodresolutionjson.New(periodResolutionStatePath)
-	adminAlerter := adminalertemail.New(emailSender, adminEmail)
+	logger := loggerFromEnv()
+	emailSender := emailsmtp.New(smtpHost, smtpPort, smtpUsername, smtpPassword, smtpFrom, emailsmtp.WithLogger(logger))
+	notionClient := notionapi.New(notionAPIKey, notionapi.WithLogger(logger))
+	clientRepo := clientnotion.New(notionClient, notionDataSourceIDClients, clientnotion.FieldMapping{}, clientnotion.WithLogger(logger))
+	completionDecider := completionnotion.New(notionClient, notionDataSourceIDTasks, completionnotion.FieldMapping{}, completionnotion.WithLogger(logger))
+	config := configenv.New(templatePath, configenv.WithLogger(logger))
+	holidayChecker := holidaycanada.New(holidayCacheDir, holidaycanada.WithCacheTTL(5*365*24*time.Hour), holidaycanada.WithLogger(logger))
+	reminderSendRepo := remindersendjson.New(reminderSendStatePath, remindersendjson.WithLogger(logger))
+	periodResolutionRepo := periodresolutionjson.New(periodResolutionStatePath, periodresolutionjson.WithLogger(logger))
+	adminAlerter := adminalertemail.New(emailSender, adminEmail, adminalertemail.WithLogger(logger))
 
 	demoNow, err := parseEnvDate(os.Getenv("NOW"))
 	if err != nil {
@@ -72,6 +73,7 @@ func BuildServiceForDemo() (*service.ReminderService, error) {
 		periodResolutionRepo,
 		adminAlerter,
 		demoClock,
+		service.WithLogger(logger),
 	), nil
 }
 

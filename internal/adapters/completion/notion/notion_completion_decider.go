@@ -38,25 +38,46 @@ type CompletionDecider struct {
 	dataSourceID   string
 	dataSourceName string
 	fields         FieldMapping
+	logger         ports.Logger
 
 	mu      sync.Mutex
 	loaded  bool
 	records verdictMap
 }
 
-func New(api APIClient, dataSourceID string, fields FieldMapping) *CompletionDecider {
-	return &CompletionDecider{
+type Option func(*CompletionDecider)
+
+func New(api APIClient, dataSourceID string, fields FieldMapping, options ...Option) *CompletionDecider {
+	d := &CompletionDecider{
 		api:          api,
 		dataSourceID: dataSourceID,
 		fields:       fields.withDefaults(),
+		logger:       ports.NoopLogger{},
 	}
+	for _, option := range options {
+		option(d)
+	}
+	d.logger = ports.EnsureLogger(d.logger)
+	return d
 }
 
-func NewForDataSourceName(api APIClient, dataSourceName string, fields FieldMapping) *CompletionDecider {
-	return &CompletionDecider{
+func NewForDataSourceName(api APIClient, dataSourceName string, fields FieldMapping, options ...Option) *CompletionDecider {
+	d := &CompletionDecider{
 		api:            api,
 		dataSourceName: dataSourceName,
 		fields:         fields.withDefaults(),
+		logger:         ports.NoopLogger{},
+	}
+	for _, option := range options {
+		option(d)
+	}
+	d.logger = ports.EnsureLogger(d.logger)
+	return d
+}
+
+func WithLogger(logger ports.Logger) Option {
+	return func(d *CompletionDecider) {
+		d.logger = ports.EnsureLogger(logger)
 	}
 }
 

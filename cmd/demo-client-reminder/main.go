@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/strengthinnumbers-business/client-reminder/internal/bootstrap"
@@ -13,12 +12,14 @@ func main() {
 	ctx := context.Background()
 	app, err := bootstrap.BuildServiceForDemo()
 	if err != nil {
-		log.Fatalf("bootstrap failed: %v", err)
+		fmt.Fprintf(os.Stderr, "bootstrap failed: %v\n", err)
+		os.Exit(1)
 	}
 
 	result, err := app.Run(ctx)
 	if err != nil {
-		log.Fatalf("run failed: %v", err)
+		fmt.Fprintf(os.Stderr, "run failed: %v\n", err)
+		os.Exit(1)
 	}
 
 	fmt.Fprintf(
