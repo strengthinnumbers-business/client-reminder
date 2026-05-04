@@ -81,6 +81,8 @@ func loggerFromEnv() ports.Logger {
 
 func logLevelFromEnv() slogadapter.Level {
 	switch strings.ToLower(os.Getenv("LOG_LEVEL")) {
+	case "demo":
+		return slogadapter.LevelDemo
 	case "debug":
 		return slogadapter.LevelDebug
 	case "error":

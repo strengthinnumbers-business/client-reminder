@@ -10,6 +10,7 @@ import (
 type Level string
 
 const (
+	LevelDemo  Level = "demo"
 	LevelDebug Level = "debug"
 	LevelInfo  Level = "info"
 	LevelError Level = "error"
@@ -35,6 +36,10 @@ func New(handler slog.Handler) *Logger {
 	return &Logger{logger: slog.New(handler)}
 }
 
+func (l *Logger) Demo(message string, args ...any) {
+	l.logger.Debug(message, args...)
+}
+
 func (l *Logger) Debug(message string, args ...any) {
 	l.logger.Debug(message, args...)
 }
@@ -49,6 +54,8 @@ func (l *Logger) Error(message string, args ...any) {
 
 func slogLevel(level Level) slog.Level {
 	switch level {
+	case LevelDemo:
+		return slog.LevelDebug
 	case LevelDebug:
 		return slog.LevelDebug
 	case LevelError:
