@@ -329,6 +329,7 @@ func testClient(id string) entities.Client {
 		EmailStyle:   "standard",
 		Greeting:     "Hello,",
 		FolderURL:    "https://files/" + id,
+		FolderPath:   "/uploads/" + id,
 		UploadPrompt: "Upload your files",
 	}
 }

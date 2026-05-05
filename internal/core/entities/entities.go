@@ -41,6 +41,7 @@ type Client struct {
 	EmailStyle   string
 	Greeting     string
 	FolderURL    string
+	FolderPath   string
 	UploadPrompt string
 }
 

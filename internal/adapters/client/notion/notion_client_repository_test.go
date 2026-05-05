@@ -25,6 +25,7 @@ func TestClientRepositoryQueriesOnlyActiveClientsAndMapsFields(t *testing.T) {
 					"Email Style":     selectProperty("standard"),
 					"Greeting":        richTextProperty("Hello Acme Team,"),
 					"Folder URL":      urlProperty("https://files.example.com/acme"),
+					"Folder Path":     richTextProperty("/uploads/acme"),
 					"Prompt":          richTextProperty("Please upload the latest monthly data exports."),
 				},
 			},
@@ -48,6 +49,22 @@ func TestClientRepositoryQueriesOnlyActiveClientsAndMapsFields(t *testing.T) {
 	if !reflect.DeepEqual(api.query.Filter, wantFilter) {
 		t.Fatalf("unexpected filter: got %#v want %#v", api.query.Filter, wantFilter)
 	}
+	wantFilterProperties := []string{
+		"Name",
+		"Period Type",
+		"Schedule Preset",
+		"Region",
+		"Contact Email",
+		"Email Style",
+		"Greeting",
+		"Folder URL",
+		"Folder Path",
+		"Prompt",
+		"Status",
+	}
+	if !reflect.DeepEqual(api.query.FilterProperties, wantFilterProperties) {
+		t.Fatalf("unexpected filter properties: got %#v want %#v", api.query.FilterProperties, wantFilterProperties)
+	}
 
 	want := []entities.Client{
 		{
@@ -60,6 +77,7 @@ func TestClientRepositoryQueriesOnlyActiveClientsAndMapsFields(t *testing.T) {
 			EmailStyle:   "standard",
 			Greeting:     "Hello Acme Team,",
 			FolderURL:    "https://files.example.com/acme",
+			FolderPath:   "/uploads/acme",
 			UploadPrompt: "Please upload the latest monthly data exports.",
 		},
 	}

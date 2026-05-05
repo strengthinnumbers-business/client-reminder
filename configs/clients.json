@@ -14,6 +14,7 @@
     "EmailStyle": "standard",
     "Greeting": "Hello Acme Team,",
     "FolderURL": "https://files.example.com/acme",
+    "FolderPath": "/uploads/acme",
     "UploadPrompt": "Please upload the latest monthly data exports."
   }
 ]

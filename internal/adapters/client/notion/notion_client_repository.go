@@ -26,6 +26,7 @@ type FieldMapping struct {
 	EmailStyle   string
 	Greeting     string
 	FolderURL    string
+	FolderPath   string
 	UploadPrompt string
 	Status       string
 }
@@ -150,6 +151,7 @@ func (r *ClientRepository) clientFromPage(page notionapi.Page) (entities.Client,
 		EmailStyle:   page.Properties.Text(r.fields.EmailStyle),
 		Greeting:     page.Properties.Text(r.fields.Greeting),
 		FolderURL:    page.Properties.Text(r.fields.FolderURL),
+		FolderPath:   page.Properties.Text(r.fields.FolderPath),
 		UploadPrompt: page.Properties.Text(r.fields.UploadPrompt),
 	}, nil
 }
@@ -182,6 +184,9 @@ func (m FieldMapping) withDefaults() FieldMapping {
 	if m.FolderURL == "" {
 		m.FolderURL = "Folder URL"
 	}
+	if m.FolderPath == "" {
+		m.FolderPath = "Folder Path"
+	}
 	if m.UploadPrompt == "" {
 		m.UploadPrompt = "Prompt"
 	}
@@ -201,6 +206,7 @@ func (m FieldMapping) filterProperties() []string {
 		m.EmailStyle,
 		m.Greeting,
 		m.FolderURL,
+		m.FolderPath,
 		m.UploadPrompt,
 		m.Status,
 	}
