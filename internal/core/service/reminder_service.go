@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -21,6 +23,7 @@ type ReminderService struct {
 	reminderSendRepo     ports.ReminderSendRepository
 	periodResolutionRepo ports.PeriodResolutionRepository
 	adminAlerter         ports.AdminAlerter
+	uploadSnapshotter    ports.UploadSnapshotter
 	logger               ports.Logger
 	clock                Clock
 }
@@ -60,6 +63,7 @@ func NewReminderService(
 		reminderSendRepo:     reminderSendRepo,
 		periodResolutionRepo: periodResolutionRepo,
 		adminAlerter:         adminAlerter,
+		uploadSnapshotter:    noopUploadSnapshotter{},
 		logger:               ports.NoopLogger{},
 		clock:                clock,
 	}
@@ -76,6 +80,14 @@ func WithLogger(logger ports.Logger) Option {
 	}
 }
 
+func WithUploadSnapshotter(uploadSnapshotter ports.UploadSnapshotter) Option {
+	return func(s *ReminderService) {
+		if uploadSnapshotter != nil {
+			s.uploadSnapshotter = uploadSnapshotter
+		}
+	}
+}
+
 func (s *ReminderService) Run(ctx context.Context) (RunResult, error) {
 	_ = ctx
 
@@ -89,10 +101,27 @@ func (s *ReminderService) Run(ctx context.Context) (RunResult, error) {
 	s.logger.Demo("loaded active clients", "count", len(clients))
 
 	result := RunResult{TotalCustomers: len(clients)}
+	previousSnapshot, currentSnapshot, err := s.uploadSnapshotter.GetPreviousAndCurrentSnapshot()
+	if err != nil {
+		return RunResult{}, fmt.Errorf("snapshot uploads: %w", err)
+	}
+	s.logger.Demo("loaded upload snapshots", "previous_files", len(previousSnapshot), "current_files", len(currentSnapshot))
 
 	for _, client := range clients {
 		currentPeriod := entities.CurrentPeriod(client.PeriodType, now)
 		s.logger.Demo("evaluating client", "client_id", client.ID, "client_name", client.Name, "email", client.Email, "period_type", periodTypeName(client.PeriodType), "current_period", currentPeriod.ID, "region", client.Region, "email_style", client.EmailStyle, "reminder_gaps", client.ReminderGaps.Effective())
+
+		changes := diffSnapshots(filterSnapshot(previousSnapshot, client.FolderPath), filterSnapshot(currentSnapshot, client.FolderPath))
+		if changes.any() {
+			changesSummary := changes.summary()
+			s.logger.Demo("requesting upload review verdict for changed files", "client_id", client.ID, "period", currentPeriod.ID, "added", len(changes.added), "changed", len(changes.changed), "deleted", len(changes.deleted))
+			if _, err := s.completionDecider.RequestNewCompletionVerdict(client, currentPeriod, changesSummary); err != nil {
+				s.logger.Error("request new completion verdict for upload changes", "client_id", client.ID, "period", currentPeriod.ID, "error", err)
+				result.Failures++
+				continue
+			}
+		}
+
 		if s.alertMissedPreviousPeriod(client, currentPeriod, &result) {
 			result.MissedPeriodAlerts++
 		}
@@ -270,6 +299,81 @@ func RenderEmailTemplate(template string, client entities.Client, period entitie
 		"{{RunDate}}", now.Format("2006-01-02"),
 	)
 	return replacer.Replace(template)
+}
+
+type uploadChanges struct {
+	added   []string
+	changed []string
+	deleted []string
+}
+
+func (c uploadChanges) any() bool {
+	return len(c.added) > 0 || len(c.changed) > 0 || len(c.deleted) > 0
+}
+
+func (c uploadChanges) summary() string {
+	var builder strings.Builder
+	writeChangeList(&builder, "ADDED", c.added)
+	writeChangeList(&builder, "CHANGED", c.changed)
+	writeChangeList(&builder, "DELETED", c.deleted)
+	return strings.TrimSuffix(builder.String(), "\n")
+}
+
+func writeChangeList(builder *strings.Builder, heading string, paths []string) {
+	if builder.Len() > 0 {
+		builder.WriteString("\n")
+	}
+	builder.WriteString(heading)
+	builder.WriteString("\n")
+	for _, path := range paths {
+		builder.WriteString(path)
+		builder.WriteString("\n")
+	}
+}
+
+func filterSnapshot(snapshot entities.UploadSnapshot, folderPath string) entities.UploadSnapshot {
+	filtered := entities.UploadSnapshot{}
+	if folderPath == "" {
+		return filtered
+	}
+
+	folder := filepath.Clean(folderPath)
+	for filePath, checksum := range snapshot {
+		cleanPath := filepath.Clean(filePath)
+		if cleanPath == folder || strings.HasPrefix(cleanPath, folder+string(filepath.Separator)) {
+			filtered[filePath] = checksum
+		}
+	}
+	return filtered
+}
+
+func diffSnapshots(previous, current entities.UploadSnapshot) uploadChanges {
+	changes := uploadChanges{}
+	for path, currentChecksum := range current {
+		previousChecksum, ok := previous[path]
+		if !ok {
+			changes.added = append(changes.added, path)
+			continue
+		}
+		if previousChecksum != currentChecksum {
+			changes.changed = append(changes.changed, path)
+		}
+	}
+	for path := range previous {
+		if _, ok := current[path]; !ok {
+			changes.deleted = append(changes.deleted, path)
+		}
+	}
+	sort.Strings(changes.added)
+	sort.Strings(changes.changed)
+	sort.Strings(changes.deleted)
+	return changes
+}
+
+type noopUploadSnapshotter struct{}
+
+func (noopUploadSnapshotter) GetPreviousAndCurrentSnapshot() (entities.UploadSnapshot, entities.UploadSnapshot, error) {
+	return entities.UploadSnapshot{}, entities.UploadSnapshot{}, nil
 }
 
 func completionVerdictName(verdict entities.CompletionVerdictStatus) string {

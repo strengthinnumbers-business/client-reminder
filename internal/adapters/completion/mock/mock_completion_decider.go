@@ -16,6 +16,13 @@ type CompletionDecider struct {
 	Verdicts map[key]entities.CompletionVerdictStatus
 	Error    error
 	Resets   []key
+	Requests []Request
+}
+
+type Request struct {
+	ClientID       string
+	PeriodID       string
+	ChangesSummary string
 }
 
 func (m *CompletionDecider) SetVerdict(customerID, periodID string, verdict entities.CompletionVerdictStatus) {
@@ -57,6 +64,7 @@ func (m *CompletionDecider) RequestNewCompletionVerdict(c entities.Client, p ent
 
 	k := key{customerID: c.ID, periodID: p.ID}
 	m.Resets = append(m.Resets, k)
+	m.Requests = append(m.Requests, Request{ClientID: c.ID, PeriodID: p.ID, ChangesSummary: changesSummary})
 	if m.Verdicts != nil {
 		m.Verdicts[k] = entities.CompletionVerdictNotRequested
 	}

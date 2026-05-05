@@ -14,6 +14,7 @@ import (
 	slogadapter "github.com/strengthinnumbers-business/client-reminder/internal/adapters/logging/slog"
 	periodresolutionjson "github.com/strengthinnumbers-business/client-reminder/internal/adapters/periodresolution/jsonfile"
 	remindersendjson "github.com/strengthinnumbers-business/client-reminder/internal/adapters/remindersend/jsonfile"
+	uploadsnapshotlocalfs "github.com/strengthinnumbers-business/client-reminder/internal/adapters/uploadsnapshot/localfs"
 	"github.com/strengthinnumbers-business/client-reminder/internal/core/ports"
 	"github.com/strengthinnumbers-business/client-reminder/internal/core/service"
 )
@@ -25,6 +26,8 @@ func BuildServiceFromEnv() (*service.ReminderService, error) {
 	reminderSendStatePath := envOrDefault("REMINDER_SEND_STATE_PATH", "state/reminder-sends.json")
 	periodResolutionStatePath := envOrDefault("PERIOD_RESOLUTION_STATE_PATH", "state/period-resolutions.json")
 	holidayCacheDir := envOrDefault("HOLIDAY_CACHE_DIR", "state/holiday-cache")
+	uploadDir := envOrDefault("UPLOAD_DIR", "uploads")
+	uploadSnapshotDir := envOrDefault("UPLOAD_SNAPSHOT_DIR", "state/upload-snapshots")
 
 	smtpHost := os.Getenv("SMTP_HOST")
 	smtpPort := envOrDefault("SMTP_PORT", "25")
@@ -52,6 +55,7 @@ func BuildServiceFromEnv() (*service.ReminderService, error) {
 	reminderSendRepo := remindersendjson.New(reminderSendStatePath, remindersendjson.WithLogger(logger))
 	periodResolutionRepo := periodresolutionjson.New(periodResolutionStatePath, periodresolutionjson.WithLogger(logger))
 	adminAlerter := adminalertemail.New(emailSender, adminEmail, adminalertemail.WithLogger(logger))
+	uploadSnapshotter := uploadsnapshotlocalfs.New(uploadDir, uploadSnapshotDir, uploadsnapshotlocalfs.WithLogger(logger))
 
 	return service.NewReminderService(
 		emailSender,
@@ -64,6 +68,7 @@ func BuildServiceFromEnv() (*service.ReminderService, error) {
 		adminAlerter,
 		nil,
 		service.WithLogger(logger),
+		service.WithUploadSnapshotter(uploadSnapshotter),
 	), nil
 }
 

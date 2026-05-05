@@ -14,6 +14,7 @@ import (
 	notionapi "github.com/strengthinnumbers-business/client-reminder/internal/adapters/notionapi"
 	periodresolutionjson "github.com/strengthinnumbers-business/client-reminder/internal/adapters/periodresolution/jsonfile"
 	remindersendjson "github.com/strengthinnumbers-business/client-reminder/internal/adapters/remindersend/jsonfile"
+	uploadsnapshotlocalfs "github.com/strengthinnumbers-business/client-reminder/internal/adapters/uploadsnapshot/localfs"
 	"github.com/strengthinnumbers-business/client-reminder/internal/core/service"
 )
 
@@ -25,6 +26,8 @@ func BuildServiceForDemo() (*service.ReminderService, error) {
 	reminderSendStatePath := envOrDefault("REMINDER_SEND_STATE_PATH", "state/reminder-sends.json")
 	periodResolutionStatePath := envOrDefault("PERIOD_RESOLUTION_STATE_PATH", "state/period-resolutions.json")
 	holidayCacheDir := envOrDefault("HOLIDAY_CACHE_DIR", "state/holiday-cache")
+	uploadDir := envOrDefault("UPLOAD_DIR", "uploads")
+	uploadSnapshotDir := envOrDefault("UPLOAD_SNAPSHOT_DIR", "state/upload-snapshots")
 
 	smtpHost := os.Getenv("SMTP_HOST")
 	smtpPort := envOrDefault("SMTP_PORT", "25")
@@ -44,7 +47,7 @@ func BuildServiceForDemo() (*service.ReminderService, error) {
 	}
 
 	logger := loggerFromEnv()
-	logger.Demo("building demo reminder service", "clients_data_source_id_set", notionDataSourceIDClients != "", "tasks_data_source_id_set", notionDataSourceIDTasks != "", "template_path", templatePath, "reminder_send_state_path", reminderSendStatePath, "period_resolution_state_path", periodResolutionStatePath, "holiday_cache_dir", holidayCacheDir, "smtp_host", smtpHost, "smtp_port", smtpPort, "smtp_from", smtpFrom, "admin_email", adminEmail)
+	logger.Demo("building demo reminder service", "clients_data_source_id_set", notionDataSourceIDClients != "", "tasks_data_source_id_set", notionDataSourceIDTasks != "", "template_path", templatePath, "reminder_send_state_path", reminderSendStatePath, "period_resolution_state_path", periodResolutionStatePath, "holiday_cache_dir", holidayCacheDir, "upload_dir", uploadDir, "upload_snapshot_dir", uploadSnapshotDir, "smtp_host", smtpHost, "smtp_port", smtpPort, "smtp_from", smtpFrom, "admin_email", adminEmail)
 	emailSender := emailsmtp.New(smtpHost, smtpPort, smtpUsername, smtpPassword, smtpFrom, emailsmtp.WithLogger(logger))
 	notionClient := notionapi.New(notionAPIKey, notionapi.WithLogger(logger))
 	clientRepo := clientnotion.New(notionClient, notionDataSourceIDClients, clientnotion.FieldMapping{}, clientnotion.WithLogger(logger))
@@ -64,6 +67,7 @@ func BuildServiceForDemo() (*service.ReminderService, error) {
 	demoClock := func() time.Time {
 		return demoNow
 	}
+	uploadSnapshotter := uploadsnapshotlocalfs.New(uploadDir, uploadSnapshotDir, uploadsnapshotlocalfs.WithClock(demoClock), uploadsnapshotlocalfs.WithLogger(logger))
 
 	return service.NewReminderService(
 		emailSender,
@@ -76,6 +80,7 @@ func BuildServiceForDemo() (*service.ReminderService, error) {
 		adminAlerter,
 		demoClock,
 		service.WithLogger(logger),
+		service.WithUploadSnapshotter(uploadSnapshotter),
 	), nil
 }
 

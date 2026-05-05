@@ -3,6 +3,7 @@ package service_test
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 	"time"
 
@@ -281,6 +282,70 @@ func TestReminderServiceRun_DoesNotAlertPreviousPeriodThatWasComplete(t *testing
 	}
 }
 
+func TestReminderServiceRun_RequestsNewVerdictForClientUploadChanges(t *testing.T) {
+	now := time.Date(2026, time.February, 2, 8, 0, 0, 0, time.UTC)
+	customer := testClient("c1")
+	otherCustomer := testClient("c2")
+	previousSnapshot := entities.UploadSnapshot{
+		"/uploads/c1/changed.pdf": "old",
+		"/uploads/c1/deleted.pdf": "deleted",
+		"/uploads/c1/same.pdf":    "same",
+		"/uploads/c10/other.pdf":  "other-old",
+		"/uploads/c2/other.pdf":   "other",
+	}
+	currentSnapshot := entities.UploadSnapshot{
+		"/uploads/c1/added.pdf":   "added",
+		"/uploads/c1/changed.pdf": "new",
+		"/uploads/c1/same.pdf":    "same",
+		"/uploads/c10/other.pdf":  "other-new",
+		"/uploads/c2/other.pdf":   "other",
+	}
+	completionDecider := &completionmock.CompletionDecider{}
+	emailSender := &emailmock.EmailSender{}
+	snapshotter := &uploadSnapshotter{previous: previousSnapshot, current: currentSnapshot}
+	expectedPreviousSnapshot := cloneSnapshot(previousSnapshot)
+	expectedCurrentSnapshot := cloneSnapshot(currentSnapshot)
+
+	svc := service.NewReminderService(
+		emailSender,
+		&clientmock.ClientRepository{Clients: []entities.Client{customer, otherCustomer}},
+		&configmock.GlobalConfiguration{
+			SubjectTemplate: "{{ClientName}} data request for {{PeriodID}}",
+			Template:        "{{Greeting}} {{PeriodID}} {{FolderURL}}",
+		},
+		completionDecider,
+		&holidaymock.HolidayChecker{},
+		&sendmock.ReminderSendRepository{},
+		dealtWithPrevious([]entities.Client{customer, otherCustomer}, now),
+		&adminmock.AdminAlerter{},
+		func() time.Time { return now },
+		service.WithUploadSnapshotter(snapshotter),
+	)
+
+	result, err := svc.Run(context.Background())
+	if err != nil {
+		t.Fatalf("run returned error: %v", err)
+	}
+
+	if result.Sent != 2 {
+		t.Fatalf("expected sent=2, got %d", result.Sent)
+	}
+	if len(completionDecider.Requests) != 1 {
+		t.Fatalf("expected one completion request, got %+v", completionDecider.Requests)
+	}
+	request := completionDecider.Requests[0]
+	if request.ClientID != customer.ID || request.PeriodID != entities.CurrentPeriod(customer.PeriodType, now).ID {
+		t.Fatalf("unexpected completion request target: %+v", request)
+	}
+	expectedSummary := "ADDED\n/uploads/c1/added.pdf\n\nCHANGED\n/uploads/c1/changed.pdf\n\nDELETED\n/uploads/c1/deleted.pdf"
+	if request.ChangesSummary != expectedSummary {
+		t.Fatalf("unexpected changes summary:\nwant: %q\ngot:  %q", expectedSummary, request.ChangesSummary)
+	}
+	if !reflect.DeepEqual(expectedPreviousSnapshot, snapshotter.previous) || !reflect.DeepEqual(expectedCurrentSnapshot, snapshotter.current) {
+		t.Fatalf("expected full snapshots to remain unchanged")
+	}
+}
+
 func TestCurrentPeriod(t *testing.T) {
 	fixedNow := time.Date(2026, time.February, 10, 8, 0, 0, 0, time.UTC)
 
@@ -381,4 +446,22 @@ func dealtWithPrevious(customers []entities.Client, now time.Time) *resolutionmo
 		}
 	}
 	return repo
+}
+
+type uploadSnapshotter struct {
+	previous entities.UploadSnapshot
+	current  entities.UploadSnapshot
+	err      error
+}
+
+func (s *uploadSnapshotter) GetPreviousAndCurrentSnapshot() (entities.UploadSnapshot, entities.UploadSnapshot, error) {
+	return s.previous, s.current, s.err
+}
+
+func cloneSnapshot(snapshot entities.UploadSnapshot) entities.UploadSnapshot {
+	clone := entities.UploadSnapshot{}
+	for path, checksum := range snapshot {
+		clone[path] = checksum
+	}
+	return clone
 }
