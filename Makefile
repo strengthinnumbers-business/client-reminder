@@ -82,6 +82,10 @@ try-notion-client-repository:
 	--data-source-id "$(NOTION_CLIENTS_DATA_SOURCE_ID)"
 
 
+##############################################################
+# The following targets are for actually running this thing. #
+##############################################################
+
 .PHONY: sync-uploads
 sync-uploads:
 	rclone copy \
@@ -90,4 +94,9 @@ sync-uploads:
 	--ignore-times \
 	--verbose \
 	'$(RCLONE_REMOTE_FULL_PATH)' \
-	./state/upload-folders/
+	$(UPLOAD_DIR)
+
+
+.PHONY: run
+run: sync-uploads
+	go run cmd/demo-client-reminder/main.go

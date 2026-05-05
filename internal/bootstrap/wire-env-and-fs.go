@@ -26,7 +26,7 @@ func BuildServiceFromEnv() (*service.ReminderService, error) {
 	reminderSendStatePath := envOrDefault("REMINDER_SEND_STATE_PATH", "state/reminder-sends.json")
 	periodResolutionStatePath := envOrDefault("PERIOD_RESOLUTION_STATE_PATH", "state/period-resolutions.json")
 	holidayCacheDir := envOrDefault("HOLIDAY_CACHE_DIR", "state/holiday-cache")
-	uploadDir := envOrDefault("UPLOAD_DIR", "uploads")
+	uploadDir := envOrDefault("UPLOAD_DIR", "state/upload-mirror")
 	uploadSnapshotDir := envOrDefault("UPLOAD_SNAPSHOT_DIR", "state/upload-snapshots")
 
 	smtpHost := os.Getenv("SMTP_HOST")
