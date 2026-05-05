@@ -91,9 +91,11 @@ func (d *CompletionDecider) IsCompleted(c entities.Client, p entities.Period) (e
 
 	record, ok := d.records[stateKey(c.ID, p.ID)]
 	if !ok {
+		d.logger.Demo("no Notion upload review task found", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "verdict", "not_requested")
 		return entities.CompletionVerdictNotRequested, nil
 	}
 
+	d.logger.Demo("matched Notion upload review task", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "task_page_id", record.pageID, "verdict", verdictName(record.verdict))
 	return record.verdict, nil
 }
 
@@ -111,6 +113,7 @@ func (d *CompletionDecider) ResetCompletionVerdict(c entities.Client, p entities
 		return fmt.Errorf("Notion completion task not found for client %s period %s", c.ID, p.ID)
 	}
 
+	d.logger.Demo("resetting Notion upload review task status", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "task_page_id", record.pageID, "status_property", d.fields.Status, "new_status", "unset")
 	_, err := d.api.UpdatePageSelect(context.Background(), record.pageID, notionapi.UpdatePageSelectRequest{
 		PropertyName: d.fields.Status,
 		SelectName:   "unset",
@@ -121,11 +124,13 @@ func (d *CompletionDecider) ResetCompletionVerdict(c entities.Client, p entities
 
 	record.verdict = entities.CompletionVerdictNotRequested
 	d.records[key] = record
+	d.logger.Demo("reset Notion upload review task status", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "task_page_id", record.pageID, "verdict", "not_requested")
 	return nil
 }
 
 func (d *CompletionDecider) ensureLoaded(ctx context.Context) error {
 	if d.loaded {
+		d.logger.Demo("using cached Notion upload review task snapshot", "records", len(d.records))
 		return nil
 	}
 
@@ -134,12 +139,14 @@ func (d *CompletionDecider) ensureLoaded(ctx context.Context) error {
 		return err
 	}
 
+	d.logger.Demo("querying upload review tasks from Notion", "data_source_id", dataSourceID)
 	pages, err := d.api.QueryDataSource(ctx, dataSourceID, notionapi.QueryDataSourceRequest{
 		FilterProperties: d.fields.filterProperties(),
 	})
 	if err != nil {
 		return fmt.Errorf("query Notion completion tasks: %w", err)
 	}
+	d.logger.Demo("Notion returned upload review task pages", "data_source_id", dataSourceID, "count", len(pages))
 
 	records, err := d.recordsFromPages(pages)
 	if err != nil {
@@ -148,21 +155,25 @@ func (d *CompletionDecider) ensureLoaded(ctx context.Context) error {
 
 	d.records = records
 	d.loaded = true
+	d.logger.Demo("cached upload review task snapshot for this run", "records", len(records))
 	return nil
 }
 
 func (d *CompletionDecider) resolveDataSourceID(ctx context.Context) (string, error) {
 	if d.dataSourceID != "" {
+		d.logger.Demo("using configured Notion upload review task data source", "data_source_id", d.dataSourceID)
 		return d.dataSourceID, nil
 	}
 	if d.dataSourceName == "" {
 		return "", fmt.Errorf("Notion completion data source ID or name is required")
 	}
+	d.logger.Demo("resolving Notion upload review task data source by title", "title", d.dataSourceName)
 	id, err := d.api.FindDataSourceIDByTitle(ctx, d.dataSourceName)
 	if err != nil {
 		return "", fmt.Errorf("resolve Notion completion data source %q: %w", d.dataSourceName, err)
 	}
 	d.dataSourceID = id
+	d.logger.Demo("resolved Notion upload review task data source", "title", d.dataSourceName, "data_source_id", id)
 	return id, nil
 }
 
@@ -193,6 +204,7 @@ func (d *CompletionDecider) recordsFromPages(pages []notionapi.Page) (verdictMap
 			pageID:  page.ID,
 			verdict: verdict,
 		}
+		d.logger.Demo("mapped Notion upload review task page", "page_id", page.ID, "client_id", clientID, "period", periodKey, "status", page.Properties.Text(d.fields.Status), "verdict", verdictName(verdict))
 	}
 	return records, nil
 }
@@ -255,4 +267,19 @@ func verdictFromStatus(status string) (entities.CompletionVerdict, error) {
 
 func stateKey(customerID, periodID string) string {
 	return customerID + "::" + periodID
+}
+
+func verdictName(verdict entities.CompletionVerdict) string {
+	switch verdict {
+	case entities.CompletionVerdictNotRequested:
+		return "not_requested"
+	case entities.CompletionUndecided:
+		return "undecided"
+	case entities.CompletionIncomplete:
+		return "upload_incomplete"
+	case entities.CompletionComplete:
+		return "upload_complete"
+	default:
+		return fmt.Sprintf("unknown_%d", verdict)
+	}
 }

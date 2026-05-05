@@ -43,6 +43,7 @@ func (r *ReminderSendRepository) ListSuccessfulSends(client entities.Client, per
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	r.logger.Demo("loading reminder send history", "path", r.path, "client_id", client.ID, "period", period.ID)
 	state, err := r.load()
 	if err != nil {
 		return nil, err
@@ -61,18 +62,21 @@ func (r *ReminderSendRepository) ListSuccessfulSends(client entities.Client, per
 		return entries[i].SequenceIndex < entries[j].SequenceIndex
 	})
 
+	r.logger.Demo("loaded successful reminder send history", "path", r.path, "client_id", client.ID, "period", period.ID, "successful_sends", len(entries), "total_records", len(state.Sends))
 	return entries, nil
 }
 
 func (r *ReminderSendRepository) RecordSuccessfulSend(client entities.Client, entry entities.SendLogEntry) error {
 	entry.ClientID = client.ID
 	entry.Success = true
+	r.logger.Demo("recording successful reminder send in JSON state", "path", r.path, "client_id", client.ID, "period", entry.ForPeriod.ID, "sequence_index", entry.SequenceIndex)
 	return r.append(entry)
 }
 
 func (r *ReminderSendRepository) RecordFailedSend(client entities.Client, entry entities.SendLogEntry) error {
 	entry.ClientID = client.ID
 	entry.Success = false
+	r.logger.Demo("recording failed reminder send in JSON state", "path", r.path, "client_id", client.ID, "period", entry.ForPeriod.ID, "sequence_index", entry.SequenceIndex, "error", entry.ErrorMessage)
 	return r.append(entry)
 }
 
@@ -86,6 +90,7 @@ func (r *ReminderSendRepository) append(entry entities.SendLogEntry) error {
 	}
 
 	state.Sends = append(state.Sends, entry)
+	r.logger.Demo("appended reminder send record", "path", r.path, "client_id", entry.ClientID, "period", entry.ForPeriod.ID, "sequence_index", entry.SequenceIndex, "success", entry.Success, "total_records", len(state.Sends))
 	return r.store(state)
 }
 
@@ -93,12 +98,14 @@ func (r *ReminderSendRepository) load() (state, error) {
 	bytes, err := os.ReadFile(r.path)
 	if err != nil {
 		if os.IsNotExist(err) {
+			r.logger.Demo("reminder send state file does not exist yet", "path", r.path)
 			return state{}, nil
 		}
 		return state{}, fmt.Errorf("read reminder send state: %w", err)
 	}
 
 	if len(bytes) == 0 {
+		r.logger.Demo("reminder send state file is empty", "path", r.path)
 		return state{}, nil
 	}
 
@@ -106,6 +113,7 @@ func (r *ReminderSendRepository) load() (state, error) {
 	if err := json.Unmarshal(bytes, &state); err != nil {
 		return state, fmt.Errorf("decode reminder send state: %w", err)
 	}
+	r.logger.Demo("loaded reminder send state file", "path", r.path, "records", len(state.Sends))
 	return state, nil
 }
 
@@ -122,5 +130,6 @@ func (r *ReminderSendRepository) store(state state) error {
 	if err := os.WriteFile(r.path, bytes, 0o644); err != nil {
 		return fmt.Errorf("write reminder send state: %w", err)
 	}
+	r.logger.Demo("wrote reminder send state file", "path", r.path, "records", len(state.Sends))
 	return nil
 }

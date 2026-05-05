@@ -44,6 +44,7 @@ func BuildServiceForDemo() (*service.ReminderService, error) {
 	}
 
 	logger := loggerFromEnv()
+	logger.Demo("building demo reminder service", "clients_data_source_id_set", notionDataSourceIDClients != "", "tasks_data_source_id_set", notionDataSourceIDTasks != "", "template_path", templatePath, "reminder_send_state_path", reminderSendStatePath, "period_resolution_state_path", periodResolutionStatePath, "holiday_cache_dir", holidayCacheDir, "smtp_host", smtpHost, "smtp_port", smtpPort, "smtp_from", smtpFrom, "admin_email", adminEmail)
 	emailSender := emailsmtp.New(smtpHost, smtpPort, smtpUsername, smtpPassword, smtpFrom, emailsmtp.WithLogger(logger))
 	notionClient := notionapi.New(notionAPIKey, notionapi.WithLogger(logger))
 	clientRepo := clientnotion.New(notionClient, notionDataSourceIDClients, clientnotion.FieldMapping{}, clientnotion.WithLogger(logger))
@@ -58,6 +59,7 @@ func BuildServiceForDemo() (*service.ReminderService, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse demo NOW env var: %w", err)
 	}
+	logger.Demo("using injected demo clock", "now", demoNow.UTC().Format(time.RFC3339))
 
 	demoClock := func() time.Time {
 		return demoNow

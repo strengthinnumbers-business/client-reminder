@@ -31,19 +31,23 @@ func WithLogger(logger ports.Logger) Option {
 
 func (c *GlobalConfiguration) GetEmailBodyTemplate(sequenceIndex int, style string) (string, string, error) {
 	// TODO: use sequenceIndex and style to select different templates if needed
-	_ = sequenceIndex
-	_ = style
+	c.logger.Demo("loading email template configuration", "sequence_index", sequenceIndex, "style", style)
 
 	subject := os.Getenv("EMAIL_SUBJECT_TEMPLATE")
 	if subject == "" {
 		subject = "Reminder to upload your data"
+		c.logger.Demo("using default email subject template", "subject", subject)
+	} else {
+		c.logger.Demo("using email subject template from environment", "subject", subject)
 	}
 
 	if c.templatePath != "" {
+		c.logger.Demo("loading email body template from file", "path", c.templatePath)
 		bytes, err := os.ReadFile(c.templatePath)
 		if err != nil {
 			return "", "", fmt.Errorf("read template file: %w", err)
 		}
+		c.logger.Demo("loaded email body template from file", "path", c.templatePath, "body_bytes", len(bytes))
 		return subject, string(bytes), nil
 	}
 
@@ -51,5 +55,6 @@ func (c *GlobalConfiguration) GetEmailBodyTemplate(sequenceIndex int, style stri
 	if tpl == "" {
 		return "", "", fmt.Errorf("email template is empty: set EMAIL_BODY_TEMPLATE or EMAIL_TEMPLATE_PATH")
 	}
+	c.logger.Demo("loaded email body template from environment", "body_bytes", len(tpl))
 	return subject, tpl, nil
 }

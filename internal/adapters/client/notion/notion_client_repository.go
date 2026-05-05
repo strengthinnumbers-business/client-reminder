@@ -80,6 +80,7 @@ func (r *ClientRepository) GetAllClients() ([]entities.Client, error) {
 		return nil, err
 	}
 
+	r.logger.Demo("querying active clients from Notion", "data_source_id", dataSourceID, "status_property", r.fields.Status, "status", "active")
 	pages, err := r.api.QueryDataSource(context.Background(), dataSourceID, notionapi.QueryDataSourceRequest{
 		Filter: map[string]any{
 			"property": r.fields.Status,
@@ -92,6 +93,7 @@ func (r *ClientRepository) GetAllClients() ([]entities.Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("query active Notion clients: %w", err)
 	}
+	r.logger.Demo("Notion returned active client pages", "data_source_id", dataSourceID, "count", len(pages))
 
 	clients := make([]entities.Client, 0, len(pages))
 	for _, page := range pages {
@@ -99,6 +101,7 @@ func (r *ClientRepository) GetAllClients() ([]entities.Client, error) {
 		if err != nil {
 			return nil, fmt.Errorf("map Notion client page %s: %w", page.ID, err)
 		}
+		r.logger.Demo("mapped Notion client page", "page_id", page.ID, "client_name", client.Name, "email", client.Email, "period_type", client.PeriodType, "region", client.Region, "email_style", client.EmailStyle, "reminder_gaps", client.ReminderGaps.Effective())
 		clients = append(clients, client)
 	}
 
@@ -107,16 +110,19 @@ func (r *ClientRepository) GetAllClients() ([]entities.Client, error) {
 
 func (r *ClientRepository) resolveDataSourceID(ctx context.Context) (string, error) {
 	if r.dataSourceID != "" {
+		r.logger.Demo("using configured Notion client data source", "data_source_id", r.dataSourceID)
 		return r.dataSourceID, nil
 	}
 	if r.dataSourceName == "" {
 		return "", fmt.Errorf("Notion data source ID or name is required")
 	}
+	r.logger.Demo("resolving Notion client data source by title", "title", r.dataSourceName)
 	id, err := r.api.FindDataSourceIDByTitle(ctx, r.dataSourceName)
 	if err != nil {
 		return "", fmt.Errorf("resolve Notion data source %q: %w", r.dataSourceName, err)
 	}
 	r.dataSourceID = id
+	r.logger.Demo("resolved Notion client data source", "title", r.dataSourceName, "data_source_id", id)
 	return id, nil
 }
 

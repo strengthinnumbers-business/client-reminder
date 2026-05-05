@@ -79,16 +79,20 @@ func WithLogger(logger ports.Logger) Option {
 func (s *ReminderService) Run(ctx context.Context) (RunResult, error) {
 	_ = ctx
 
+	now := s.clock().UTC()
+	s.logger.Demo("starting reminder run", "run_date", now.Format(time.DateOnly), "run_time_utc", now.Format(time.RFC3339))
+
 	clients, err := s.clientRepo.GetAllClients()
 	if err != nil {
 		return RunResult{}, fmt.Errorf("load clients: %w", err)
 	}
+	s.logger.Demo("loaded active clients", "count", len(clients))
 
-	now := s.clock().UTC()
 	result := RunResult{TotalCustomers: len(clients)}
 
 	for _, client := range clients {
 		currentPeriod := entities.CurrentPeriod(client.PeriodType, now)
+		s.logger.Demo("evaluating client", "client_id", client.ID, "client_name", client.Name, "email", client.Email, "period_type", periodTypeName(client.PeriodType), "current_period", currentPeriod.ID, "region", client.Region, "email_style", client.EmailStyle, "reminder_gaps", client.ReminderGaps.Effective())
 		if s.alertMissedPreviousPeriod(client, currentPeriod, &result) {
 			result.MissedPeriodAlerts++
 		}
@@ -100,6 +104,7 @@ func (s *ReminderService) Run(ctx context.Context) (RunResult, error) {
 			result.Failures++
 			continue
 		}
+		s.logger.Demo("loaded previous successful sends for current period", "client_id", client.ID, "period", currentPeriod.ID, "count", len(successfulSends))
 
 		eligibility, ok, err := schedule.NextEligibility(now, successfulSends, s.holidayChecker)
 		if err != nil {
@@ -108,9 +113,10 @@ func (s *ReminderService) Run(ctx context.Context) (RunResult, error) {
 			continue
 		}
 		if !ok {
+			s.logger.Demo("client is not eligible for a reminder today", "client_id", client.ID, "period", currentPeriod.ID, "successful_send_count", len(successfulSends), "configured_sequence_count", len(client.ReminderGaps.Effective()))
 			continue
 		}
-		s.logger.Debug("client reminder eligible", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex, "earliest_date", eligibility.EarliestDate.Format(time.DateOnly))
+		s.logger.Demo("client is eligible for a reminder", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex, "earliest_date", eligibility.EarliestDate.Format(time.DateOnly))
 
 		verdict, err := s.completionDecider.IsCompleted(client, eligibility.Period)
 		if err != nil {
@@ -118,26 +124,33 @@ func (s *ReminderService) Run(ctx context.Context) (RunResult, error) {
 			result.Failures++
 			continue
 		}
+		s.logger.Demo("loaded upload review verdict", "client_id", client.ID, "period", eligibility.Period.ID, "verdict", completionVerdictName(verdict))
 
 		switch verdict {
 		case entities.CompletionComplete:
+			s.logger.Demo("skipping reminder because upload is marked complete", "client_id", client.ID, "period", eligibility.Period.ID)
 			result.SkippedDone++
 			continue
 		case entities.CompletionUndecided:
+			s.logger.Demo("skipping reminder because upload review is undecided", "client_id", client.ID, "period", eligibility.Period.ID)
 			continue
 		case entities.CompletionVerdictNotRequested, entities.CompletionIncomplete:
+			s.logger.Demo("sending reminder because upload is not complete", "client_id", client.ID, "period", eligibility.Period.ID, "verdict", completionVerdictName(verdict))
 			s.sendReminder(client, eligibility, client.EmailStyle, verdict, now, &result)
 		}
 	}
 
+	s.logger.Demo("finished reminder run", "total_clients", result.TotalCustomers, "sent", result.Sent, "skipped_done", result.SkippedDone, "missed_period_alerts", result.MissedPeriodAlerts, "failures", result.Failures)
 	return result, nil
 }
 
 func (s *ReminderService) alertMissedPreviousPeriod(client entities.Client, currentPeriod entities.Period, result *RunResult) bool {
 	previousPeriod := currentPeriod.Previous()
 	if previousPeriod.ID == "" {
+		s.logger.Demo("previous period could not be determined", "client_id", client.ID, "current_period", currentPeriod.ID)
 		return false
 	}
+	s.logger.Demo("checking whether previous period was missed", "client_id", client.ID, "previous_period", previousPeriod.ID)
 
 	dealtWith, err := s.periodResolutionRepo.IsDealtWith(client, previousPeriod)
 	if err != nil {
@@ -146,6 +159,7 @@ func (s *ReminderService) alertMissedPreviousPeriod(client entities.Client, curr
 		return false
 	}
 	if dealtWith {
+		s.logger.Demo("previous period already resolved", "client_id", client.ID, "period", previousPeriod.ID)
 		return false
 	}
 
@@ -156,8 +170,10 @@ func (s *ReminderService) alertMissedPreviousPeriod(client entities.Client, curr
 		return false
 	}
 	if len(successfulSends) > 0 {
+		s.logger.Demo("previous period had successful reminder sends", "client_id", client.ID, "period", previousPeriod.ID, "count", len(successfulSends))
 		return false
 	}
+	s.logger.Demo("previous period had no successful reminder sends", "client_id", client.ID, "period", previousPeriod.ID)
 
 	verdict, err := s.completionDecider.IsCompleted(client, previousPeriod)
 	if err != nil {
@@ -165,8 +181,10 @@ func (s *ReminderService) alertMissedPreviousPeriod(client entities.Client, curr
 		result.Failures++
 		return false
 	}
+	s.logger.Demo("loaded previous-period upload review verdict", "client_id", client.ID, "period", previousPeriod.ID, "verdict", completionVerdictName(verdict))
 	if verdict == entities.CompletionComplete {
 		reason := "completion complete: no reminder needed"
+		s.logger.Demo("marking previous period resolved because upload is complete", "client_id", client.ID, "period", previousPeriod.ID, "reason", reason)
 		if err := s.periodResolutionRepo.MarkDealtWith(client, previousPeriod, reason); err != nil {
 			s.logger.Error("mark previous period dealt with", "client_id", client.ID, "period", previousPeriod.ID, "error", err)
 			result.Failures++
@@ -175,6 +193,7 @@ func (s *ReminderService) alertMissedPreviousPeriod(client entities.Client, curr
 	}
 
 	reason := "admin alerted: period ended with no successful reminders"
+	s.logger.Demo("alerting admin about missed previous period", "client_id", client.ID, "period", previousPeriod.ID, "reason", reason)
 	if err := s.adminAlerter.AlertMissedPeriod(client, previousPeriod, reason); err != nil {
 		s.logger.Error("alert missed previous period", "client_id", client.ID, "period", previousPeriod.ID, "error", err)
 		result.Failures++
@@ -190,6 +209,7 @@ func (s *ReminderService) alertMissedPreviousPeriod(client entities.Client, curr
 }
 
 func (s *ReminderService) sendReminder(client entities.Client, eligibility entities.ReminderEligibility, emailStyle string, verdict entities.CompletionVerdict, now time.Time, result *RunResult) {
+	s.logger.Demo("loading reminder email template", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex, "style", emailStyle)
 	subjectTemplate, bodyTemplate, err := s.globalConfig.GetEmailBodyTemplate(eligibility.SequenceIndex, emailStyle)
 	if err != nil {
 		s.logger.Error("load email template", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex, "style", emailStyle, "error", err)
@@ -199,6 +219,7 @@ func (s *ReminderService) sendReminder(client entities.Client, eligibility entit
 
 	subjectLine := RenderEmailTemplate(subjectTemplate, client, eligibility.Period, now)
 	body := RenderEmailTemplate(bodyTemplate, client, eligibility.Period, now)
+	s.logger.Demo("rendered reminder email", "client_id", client.ID, "period", eligibility.Period.ID, "to", client.Email, "subject", subjectLine, "body_bytes", len(body))
 	entry := entities.SendLogEntry{
 		ClientID:      client.ID,
 		ForPeriod:     eligibility.Period,
@@ -208,6 +229,7 @@ func (s *ReminderService) sendReminder(client entities.Client, eligibility entit
 		Success:       true,
 	}
 
+	s.logger.Demo("sending reminder email", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex, "to", client.Email, "subject", subjectLine)
 	if err := s.emailSender.SendEmail(client.Email, subjectLine, body); err != nil {
 		s.logger.Error("send reminder email", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex, "error", err)
 		entry.Success = false
@@ -220,6 +242,7 @@ func (s *ReminderService) sendReminder(client entities.Client, eligibility entit
 	}
 
 	result.Sent++
+	s.logger.Demo("recording successful reminder send", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex)
 	if err := s.reminderSendRepo.RecordSuccessfulSend(client, entry); err != nil {
 		s.logger.Error("record successful reminder send", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex, "error", err)
 		result.Failures++
@@ -227,6 +250,7 @@ func (s *ReminderService) sendReminder(client entities.Client, eligibility entit
 	}
 
 	if verdict == entities.CompletionIncomplete {
+		s.logger.Demo("resetting upload review verdict after incomplete-upload reminder", "client_id", client.ID, "period", eligibility.Period.ID)
 		if err := s.completionDecider.ResetCompletionVerdict(client, eligibility.Period); err != nil {
 			s.logger.Error("reset completion verdict", "client_id", client.ID, "period", eligibility.Period.ID, "error", err)
 			result.Failures++
@@ -244,4 +268,32 @@ func RenderEmailTemplate(template string, client entities.Client, period entitie
 		"{{RunDate}}", now.Format("2006-01-02"),
 	)
 	return replacer.Replace(template)
+}
+
+func completionVerdictName(verdict entities.CompletionVerdict) string {
+	switch verdict {
+	case entities.CompletionVerdictNotRequested:
+		return "not_requested"
+	case entities.CompletionUndecided:
+		return "undecided"
+	case entities.CompletionIncomplete:
+		return "upload_incomplete"
+	case entities.CompletionComplete:
+		return "upload_complete"
+	default:
+		return fmt.Sprintf("unknown_%d", verdict)
+	}
+}
+
+func periodTypeName(periodType entities.PeriodType) string {
+	switch periodType {
+	case entities.PeriodWeekly:
+		return "weekly"
+	case entities.PeriodMonthly:
+		return "monthly"
+	case entities.PeriodQuarterly:
+		return "quarterly"
+	default:
+		return fmt.Sprintf("unknown_%d", periodType)
+	}
 }
