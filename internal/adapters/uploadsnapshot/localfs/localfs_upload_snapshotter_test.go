@@ -30,8 +30,8 @@ func TestUploadSnapshotter_InitialRunReturnsCurrentAsPreviousAndStoresSnapshot(t
 	}
 
 	expected := entities.UploadSnapshot{
-		absPath(t, filepath.Join(uploadDir, "root.txt")):            sha1String("root content"),
-		absPath(t, filepath.Join(uploadDir, "nested", "child.txt")): sha1String("child content"),
+		"root.txt":         sha1String("root content"),
+		"nested/child.txt": sha1String("child content"),
 	}
 	if !reflect.DeepEqual(current, expected) {
 		t.Fatalf("unexpected current snapshot\nwant=%+v\ngot=%+v", expected, current)
@@ -65,7 +65,7 @@ func TestUploadSnapshotter_LoadsLatestPreviousSnapshotBySortableFilename(t *test
 	}
 
 	expectedCurrent := entities.UploadSnapshot{
-		absPath(t, filepath.Join(uploadDir, "upload.txt")): sha1String("current"),
+		"upload.txt": sha1String("current"),
 	}
 	if !reflect.DeepEqual(current, expectedCurrent) {
 		t.Fatalf("unexpected current snapshot\nwant=%+v\ngot=%+v", expectedCurrent, current)
@@ -131,15 +131,6 @@ func readOnlyStoredSnapshot(t *testing.T, snapshotDir string) entities.UploadSna
 		t.Fatalf("decode stored snapshot: %v", err)
 	}
 	return snapshot
-}
-
-func absPath(t *testing.T, path string) string {
-	t.Helper()
-	abs, err := filepath.Abs(path)
-	if err != nil {
-		t.Fatalf("resolve absolute path: %v", err)
-	}
-	return abs
 }
 
 func sha1String(content string) string {

@@ -99,4 +99,4 @@ sync-uploads:
 
 .PHONY: run
 run: sync-uploads
-	go run cmd/demo-client-reminder/main.go
+	LOG_LEVEL=demo go run cmd/demo-client-reminder/main.go

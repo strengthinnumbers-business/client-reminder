@@ -131,7 +131,12 @@ func (s *UploadSnapshotter) currentSnapshot() (entities.UploadSnapshot, error) {
 		if err != nil {
 			return err
 		}
-		snapshot[path] = checksum
+		relPath, err := filepath.Rel(root, path)
+		if err != nil {
+			return fmt.Errorf("make upload snapshot path relative %s: %w", path, err)
+		}
+		// snapshot[filepath.Clean(string(filepath.Separator)+relPath)] = checksum
+		snapshot[filepath.Clean(relPath)] = checksum
 		return nil
 	})
 	if err != nil {
