@@ -16,7 +16,9 @@ var _ ports.CompletionDecider = (*CompletionDecider)(nil)
 type APIClient interface {
 	FindDataSourceIDByTitle(ctx context.Context, title string) (string, error)
 	QueryDataSource(ctx context.Context, dataSourceID string, query notionapi.QueryDataSourceRequest) ([]notionapi.Page, error)
+	CreatePage(ctx context.Context, request notionapi.CreatePageRequest) (notionapi.Page, error)
 	UpdatePageSelect(ctx context.Context, pageID string, request notionapi.UpdatePageSelectRequest) (notionapi.Page, error)
+	UpdatePageInTrash(ctx context.Context, pageID string, inTrash bool) (notionapi.Page, error)
 }
 
 type FieldMapping struct {
@@ -24,14 +26,15 @@ type FieldMapping struct {
 	PeriodKey      string
 	ReminderClient string
 	Status         string
+	ChangesSummary string
+	VerdictReason  string
 }
 
 type verdictRecord struct {
-	pageID  string
-	verdict entities.CompletionVerdict
+	task entities.CompletionVerdictTask
 }
 
-type verdictMap map[string]verdictRecord
+type verdictMap map[string][]verdictRecord
 
 type CompletionDecider struct {
 	api            APIClient
@@ -81,51 +84,74 @@ func WithLogger(logger ports.Logger) Option {
 	}
 }
 
-func (d *CompletionDecider) IsCompleted(c entities.Client, p entities.Period) (entities.CompletionVerdict, error) {
+func (d *CompletionDecider) GetVerdict(c entities.Client, p entities.Period) (entities.CompletionVerdictTask, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	if err := d.ensureLoaded(context.Background()); err != nil {
-		return entities.CompletionUndecided, err
+		return entities.CompletionVerdictTask{Status: entities.CompletionUndecided}, err
 	}
 
-	record, ok := d.records[stateKey(c.ID, p.ID)]
-	if !ok {
+	records := d.records[stateKey(c.ID, p.ID)]
+	if len(records) == 0 {
 		d.logger.Demo("no Notion upload review task found", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "verdict", "not_requested")
-		return entities.CompletionVerdictNotRequested, nil
+		return entities.CompletionVerdictTask{Status: entities.CompletionVerdictNotRequested}, nil
+	}
+	if len(records) > 1 {
+		return entities.CompletionVerdictTask{}, fmt.Errorf("multiple Notion completion tasks found for client %s period %s", c.ID, p.ID)
 	}
 
-	d.logger.Demo("matched Notion upload review task", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "task_page_id", record.pageID, "verdict", verdictName(record.verdict))
-	return record.verdict, nil
+	task := records[0].task
+	d.logger.Demo("matched Notion upload review task", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "task_page_id", task.ID, "verdict", verdictName(task.Status))
+	return task, nil
 }
 
-func (d *CompletionDecider) ResetCompletionVerdict(c entities.Client, p entities.Period) error {
+func (d *CompletionDecider) RequestNewCompletionVerdict(c entities.Client, p entities.Period, changesSummary string) (entities.CompletionVerdictTask, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	ctx := context.Background()
 
-	if err := d.ensureLoaded(context.Background()); err != nil {
-		return err
+	if err := d.ensureLoaded(ctx); err != nil {
+		return entities.CompletionVerdictTask{}, err
 	}
 
 	key := stateKey(c.ID, p.ID)
-	record, ok := d.records[key]
-	if !ok {
-		return fmt.Errorf("Notion completion task not found for client %s period %s", c.ID, p.ID)
+	for _, record := range d.records[key] {
+		d.logger.Demo("trashing existing Notion upload review task", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "task_page_id", record.task.ID)
+		if _, err := d.api.UpdatePageInTrash(ctx, record.task.ID, true); err != nil {
+			return entities.CompletionVerdictTask{}, fmt.Errorf("trash Notion completion task for client %s period %s page %s: %w", c.ID, p.ID, record.task.ID, err)
+		}
 	}
 
-	d.logger.Demo("resetting Notion upload review task status", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "task_page_id", record.pageID, "status_property", d.fields.Status, "new_status", "unset")
-	_, err := d.api.UpdatePageSelect(context.Background(), record.pageID, notionapi.UpdatePageSelectRequest{
-		PropertyName: d.fields.Status,
-		SelectName:   "unset",
+	dataSourceID, err := d.resolveDataSourceID(ctx)
+	if err != nil {
+		return entities.CompletionVerdictTask{}, err
+	}
+
+	d.logger.Demo("creating new Notion upload review task", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "data_source_id", dataSourceID)
+	page, err := d.api.CreatePage(ctx, notionapi.CreatePageRequest{
+		DataSourceID: dataSourceID,
+		Properties: notionapi.PagePropertyUpdates{
+			d.fields.Title:          notionapi.TitleProperty(completionTaskTitle(c, p)),
+			d.fields.PeriodKey:      notionapi.RichTextProperty(p.ID),
+			d.fields.ReminderClient: notionapi.RelationProperty(c.ID),
+			d.fields.Status:         notionapi.SelectProperty("unset"),
+			d.fields.ChangesSummary: notionapi.RichTextProperty(changesSummary),
+			d.fields.VerdictReason:  notionapi.RichTextProperty(""),
+		},
 	})
 	if err != nil {
-		return fmt.Errorf("reset Notion completion verdict for client %s period %s page %s: %w", c.ID, p.ID, record.pageID, err)
+		return entities.CompletionVerdictTask{}, fmt.Errorf("create Notion completion task for client %s period %s: %w", c.ID, p.ID, err)
 	}
 
-	record.verdict = entities.CompletionVerdictNotRequested
-	d.records[key] = record
-	d.logger.Demo("reset Notion upload review task status", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "task_page_id", record.pageID, "verdict", "not_requested")
-	return nil
+	task := entities.CompletionVerdictTask{
+		ID:             page.ID,
+		Status:         entities.CompletionVerdictNotRequested,
+		ChangesSummary: changesSummary,
+	}
+	d.records[key] = []verdictRecord{{task: task}}
+	d.logger.Demo("created new Notion upload review task", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "task_page_id", task.ID, "verdict", "not_requested")
+	return task, nil
 }
 
 func (d *CompletionDecider) ensureLoaded(ctx context.Context) error {
@@ -196,14 +222,13 @@ func (d *CompletionDecider) recordsFromPages(pages []notionapi.Page) (verdictMap
 		}
 
 		key := stateKey(clientID, periodKey)
-		if existing, ok := records[key]; ok {
-			return nil, fmt.Errorf("map Notion completion task page %s: duplicate task for client %s period %s already mapped to page %s", page.ID, clientID, periodKey, existing.pageID)
+		task := entities.CompletionVerdictTask{
+			ID:             page.ID,
+			Status:         verdict,
+			ChangesSummary: page.Properties.Text(d.fields.ChangesSummary),
+			VerdictReason:  page.Properties.Text(d.fields.VerdictReason),
 		}
-
-		records[key] = verdictRecord{
-			pageID:  page.ID,
-			verdict: verdict,
-		}
+		records[key] = append(records[key], verdictRecord{task: task})
 		d.logger.Demo("mapped Notion upload review task page", "page_id", page.ID, "client_id", clientID, "period", periodKey, "status", page.Properties.Text(d.fields.Status), "verdict", verdictName(verdict))
 	}
 	return records, nil
@@ -222,6 +247,12 @@ func (m FieldMapping) withDefaults() FieldMapping {
 	if m.Status == "" {
 		m.Status = "Status"
 	}
+	if m.ChangesSummary == "" {
+		m.ChangesSummary = "Changes Summary"
+	}
+	if m.VerdictReason == "" {
+		m.VerdictReason = "Verdict Reason"
+	}
 	return m
 }
 
@@ -231,6 +262,8 @@ func (m FieldMapping) filterProperties() []string {
 		m.PeriodKey,
 		m.ReminderClient,
 		m.Status,
+		m.ChangesSummary,
+		m.VerdictReason,
 	}
 }
 
@@ -250,7 +283,7 @@ func clientIDFromRelation(property notionapi.Property) (string, error) {
 	return property.Relation[0].ID, nil
 }
 
-func verdictFromStatus(status string) (entities.CompletionVerdict, error) {
+func verdictFromStatus(status string) (entities.CompletionVerdictStatus, error) {
 	switch strings.ToLower(strings.TrimSpace(status)) {
 	case "", "unset":
 		return entities.CompletionVerdictNotRequested, nil
@@ -269,7 +302,14 @@ func stateKey(customerID, periodID string) string {
 	return customerID + "::" + periodID
 }
 
-func verdictName(verdict entities.CompletionVerdict) string {
+func completionTaskTitle(c entities.Client, p entities.Period) string {
+	if c.Name == "" {
+		return p.ID
+	}
+	return c.Name + " " + p.ID
+}
+
+func verdictName(verdict entities.CompletionVerdictStatus) string {
 	switch verdict {
 	case entities.CompletionVerdictNotRequested:
 		return "not_requested"

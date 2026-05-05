@@ -18,6 +18,8 @@ func TestCompletionDeciderQueriesOnceAndMapsVerdicts(t *testing.T) {
 					"Period Key":      richTextProperty("2026-04"),
 					"Reminder Client": relationProperty("client-page-1"),
 					"Status":          selectProperty("upload_complete"),
+					"Changes Summary": richTextProperty("changed files"),
+					"Verdict Reason":  richTextProperty("all present"),
 				},
 			},
 			{
@@ -34,26 +36,29 @@ func TestCompletionDeciderQueriesOnceAndMapsVerdicts(t *testing.T) {
 	decider := New(api, "tasks-ds", FieldMapping{})
 	client := entities.Client{ID: "client-page-1"}
 
-	verdict, err := decider.IsCompleted(client, entities.Period{Type: entities.PeriodMonthly, ID: "2026-04"})
+	task, err := decider.GetVerdict(client, entities.Period{Type: entities.PeriodMonthly, ID: "2026-04"})
 	if err != nil {
-		t.Fatalf("IsCompleted returned error: %v", err)
+		t.Fatalf("GetVerdict returned error: %v", err)
 	}
-	if verdict != entities.CompletionComplete {
-		t.Fatalf("expected CompletionComplete, got %v", verdict)
+	if task.Status != entities.CompletionComplete {
+		t.Fatalf("expected CompletionComplete, got %v", task.Status)
+	}
+	if task.ChangesSummary != "changed files" || task.VerdictReason != "all present" {
+		t.Fatalf("unexpected task details: %#v", task)
 	}
 
-	verdict, err = decider.IsCompleted(client, entities.Period{Type: entities.PeriodMonthly, ID: "2026-05"})
+	task, err = decider.GetVerdict(client, entities.Period{Type: entities.PeriodMonthly, ID: "2026-05"})
 	if err != nil {
-		t.Fatalf("IsCompleted returned error: %v", err)
+		t.Fatalf("GetVerdict returned error: %v", err)
 	}
-	if verdict != entities.CompletionUndecided {
-		t.Fatalf("expected CompletionUndecided, got %v", verdict)
+	if task.Status != entities.CompletionUndecided {
+		t.Fatalf("expected CompletionUndecided, got %v", task.Status)
 	}
 	if api.queryCalls != 1 {
 		t.Fatalf("expected one cached query, got %d", api.queryCalls)
 	}
 
-	wantFilterProperties := []string{"Title", "Period Key", "Reminder Client", "Status"}
+	wantFilterProperties := []string{"Title", "Period Key", "Reminder Client", "Status", "Changes Summary", "Verdict Reason"}
 	if !reflect.DeepEqual(api.query.FilterProperties, wantFilterProperties) {
 		t.Fatalf("unexpected filter properties: got %#v want %#v", api.query.FilterProperties, wantFilterProperties)
 	}
@@ -62,20 +67,21 @@ func TestCompletionDeciderQueriesOnceAndMapsVerdicts(t *testing.T) {
 func TestCompletionDeciderMissingVerdictDefaultsToNotRequested(t *testing.T) {
 	decider := New(&fakeAPI{}, "tasks-ds", FieldMapping{})
 
-	verdict, err := decider.IsCompleted(
+	task, err := decider.GetVerdict(
 		entities.Client{ID: "client-page-1"},
 		entities.Period{Type: entities.PeriodMonthly, ID: "2026-04"},
 	)
 	if err != nil {
-		t.Fatalf("IsCompleted returned error: %v", err)
+		t.Fatalf("GetVerdict returned error: %v", err)
 	}
-	if verdict != entities.CompletionVerdictNotRequested {
-		t.Fatalf("expected CompletionVerdictNotRequested, got %v", verdict)
+	if task.Status != entities.CompletionVerdictNotRequested {
+		t.Fatalf("expected CompletionVerdictNotRequested, got %v", task.Status)
 	}
 }
 
-func TestCompletionDeciderResetUpdatesNotionAndCache(t *testing.T) {
+func TestCompletionDeciderRequestNewVerdictTrashesExistingTasksAndCreatesNewTask(t *testing.T) {
 	api := &fakeAPI{
+		createdPageID: "task-page-2",
 		pages: []notionapi.Page{
 			{
 				ID: "task-page-1",
@@ -92,26 +98,33 @@ func TestCompletionDeciderResetUpdatesNotionAndCache(t *testing.T) {
 	client := entities.Client{ID: "client-page-1"}
 	period := entities.Period{Type: entities.PeriodMonthly, ID: "2026-04"}
 
-	if err := decider.ResetCompletionVerdict(client, period); err != nil {
-		t.Fatalf("ResetCompletionVerdict returned error: %v", err)
-	}
-
-	if api.updatedPageID != "task-page-1" {
-		t.Fatalf("expected update for task-page-1, got %q", api.updatedPageID)
-	}
-	if got, want := api.updateRequest.PropertyName, "Status"; got != want {
-		t.Fatalf("unexpected updated property: got %q want %q", got, want)
-	}
-	if got, want := api.updateRequest.SelectName, "unset"; got != want {
-		t.Fatalf("unexpected updated select: got %q want %q", got, want)
-	}
-
-	verdict, err := decider.IsCompleted(client, period)
+	task, err := decider.RequestNewCompletionVerdict(client, period, "new uploads")
 	if err != nil {
-		t.Fatalf("IsCompleted returned error: %v", err)
+		t.Fatalf("RequestNewCompletionVerdict returned error: %v", err)
 	}
-	if verdict != entities.CompletionVerdictNotRequested {
-		t.Fatalf("expected cached CompletionVerdictNotRequested, got %v", verdict)
+
+	if !reflect.DeepEqual(api.trashedPageIDs, []string{"task-page-1"}) {
+		t.Fatalf("unexpected trashed pages: %#v", api.trashedPageIDs)
+	}
+	if task.ID != "task-page-2" || task.Status != entities.CompletionVerdictNotRequested || task.ChangesSummary != "new uploads" {
+		t.Fatalf("unexpected returned task: %#v", task)
+	}
+	if api.createRequest.DataSourceID != "tasks-ds" {
+		t.Fatalf("unexpected create data source: %q", api.createRequest.DataSourceID)
+	}
+	if got := api.createRequest.Properties["Changes Summary"].RichText[0].Text.Content; got != "new uploads" {
+		t.Fatalf("unexpected changes summary: %q", got)
+	}
+	if got := api.createRequest.Properties["Status"].Select.Name; got != "unset" {
+		t.Fatalf("unexpected status: %q", got)
+	}
+
+	task, err = decider.GetVerdict(client, period)
+	if err != nil {
+		t.Fatalf("GetVerdict returned error: %v", err)
+	}
+	if task.ID != "task-page-2" || task.Status != entities.CompletionVerdictNotRequested {
+		t.Fatalf("expected cached new task, got %#v", task)
 	}
 	if api.queryCalls != 1 {
 		t.Fatalf("expected reset to update cache without requerying, got %d queries", api.queryCalls)
@@ -121,12 +134,12 @@ func TestCompletionDeciderResetUpdatesNotionAndCache(t *testing.T) {
 func TestCompletionDeciderResolvesDataSourceName(t *testing.T) {
 	api := &fakeAPI{dataSourceID: "resolved-ds"}
 
-	_, err := NewForDataSourceName(api, "Test Upload Review Tasks", FieldMapping{}).IsCompleted(
+	_, err := NewForDataSourceName(api, "Test Upload Review Tasks", FieldMapping{}).GetVerdict(
 		entities.Client{ID: "client-page-1"},
 		entities.Period{Type: entities.PeriodMonthly, ID: "2026-04"},
 	)
 	if err != nil {
-		t.Fatalf("IsCompleted returned error: %v", err)
+		t.Fatalf("GetVerdict returned error: %v", err)
 	}
 	if api.searchedTitle != "Test Upload Review Tasks" {
 		t.Fatalf("expected data source title search, got %q", api.searchedTitle)
@@ -144,8 +157,11 @@ type fakeAPI struct {
 	queryCalls          int
 	pages               []notionapi.Page
 
-	updatedPageID string
-	updateRequest notionapi.UpdatePageSelectRequest
+	updatedPageID  string
+	updateRequest  notionapi.UpdatePageSelectRequest
+	trashedPageIDs []string
+	createRequest  notionapi.CreatePageRequest
+	createdPageID  string
 }
 
 func (f *fakeAPI) FindDataSourceIDByTitle(_ context.Context, title string) (string, error) {
@@ -164,6 +180,22 @@ func (f *fakeAPI) UpdatePageSelect(_ context.Context, pageID string, request not
 	f.updatedPageID = pageID
 	f.updateRequest = request
 	return notionapi.Page{ID: pageID}, nil
+}
+
+func (f *fakeAPI) UpdatePageInTrash(_ context.Context, pageID string, inTrash bool) (notionapi.Page, error) {
+	if inTrash {
+		f.trashedPageIDs = append(f.trashedPageIDs, pageID)
+	}
+	return notionapi.Page{ID: pageID, InTrash: inTrash}, nil
+}
+
+func (f *fakeAPI) CreatePage(_ context.Context, request notionapi.CreatePageRequest) (notionapi.Page, error) {
+	f.createRequest = request
+	pageID := f.createdPageID
+	if pageID == "" {
+		pageID = "created-page"
+	}
+	return notionapi.Page{ID: pageID, Properties: notionapi.Properties{}}, nil
 }
 
 func richTextProperty(value string) notionapi.Property {

@@ -11,7 +11,7 @@ import (
 	"github.com/strengthinnumbers-business/client-reminder/internal/core/ports"
 )
 
-type verdictMap map[string]entities.CompletionVerdict
+type verdictMap map[string]entities.CompletionVerdictStatus
 
 type CompletionDecider struct {
 	path   string
@@ -36,38 +36,40 @@ func WithLogger(logger ports.Logger) Option {
 	}
 }
 
-func (d *CompletionDecider) IsCompleted(c entities.Client, p entities.Period) (entities.CompletionVerdict, error) {
+func (d *CompletionDecider) GetVerdict(c entities.Client, p entities.Period) (entities.CompletionVerdictTask, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	state, err := d.load()
 	if err != nil {
-		return entities.CompletionUndecided, err
+		return entities.CompletionVerdictTask{Status: entities.CompletionUndecided}, err
 	}
 
+	id := stateKey(c.ID, p.ID)
 	v, ok := state[stateKey(c.ID, p.ID)]
 	if !ok {
-		return entities.CompletionVerdictNotRequested, nil
+		return entities.CompletionVerdictTask{ID: id, Status: entities.CompletionVerdictNotRequested}, nil
 	}
 
-	return v, nil
+	return entities.CompletionVerdictTask{ID: id, Status: v}, nil
 }
 
-func (d *CompletionDecider) ResetCompletionVerdict(c entities.Client, p entities.Period) error {
+func (d *CompletionDecider) RequestNewCompletionVerdict(c entities.Client, p entities.Period, changesSummary string) (entities.CompletionVerdictTask, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	state, err := d.load()
 	if err != nil {
-		return err
+		return entities.CompletionVerdictTask{}, err
 	}
 
-	state[stateKey(c.ID, p.ID)] = entities.CompletionVerdictNotRequested
+	id := stateKey(c.ID, p.ID)
+	state[id] = entities.CompletionVerdictNotRequested
 	if err := d.store(state); err != nil {
-		return err
+		return entities.CompletionVerdictTask{}, err
 	}
 
-	return nil
+	return entities.CompletionVerdictTask{ID: id, Status: entities.CompletionVerdictNotRequested, ChangesSummary: changesSummary}, nil
 }
 
 func (d *CompletionDecider) load() (verdictMap, error) {

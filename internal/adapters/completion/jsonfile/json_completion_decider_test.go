@@ -10,14 +10,14 @@ import (
 func TestCompletionDecider_MissingVerdictDefaultsToNotRequested(t *testing.T) {
 	decider := New(filepath.Join(t.TempDir(), "completion-verdicts.json"))
 
-	verdict, err := decider.IsCompleted(
+	task, err := decider.GetVerdict(
 		entities.Client{ID: "c1"},
 		entities.Period{Type: entities.PeriodMonthly, ID: "2026-02"},
 	)
 	if err != nil {
-		t.Fatalf("IsCompleted returned error: %v", err)
+		t.Fatalf("GetVerdict returned error: %v", err)
 	}
-	if verdict != entities.CompletionVerdictNotRequested {
-		t.Fatalf("expected CompletionVerdictNotRequested, got %v", verdict)
+	if task.Status != entities.CompletionVerdictNotRequested {
+		t.Fatalf("expected CompletionVerdictNotRequested, got %v", task.Status)
 	}
 }

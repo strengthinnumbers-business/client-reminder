@@ -334,7 +334,7 @@ func testClient(id string) entities.Client {
 	}
 }
 
-func customerVerdict(customer entities.Client) entities.CompletionVerdict {
+func customerVerdict(customer entities.Client) entities.CompletionVerdictStatus {
 	switch customer.ID {
 	case "c1":
 		return entities.CompletionIncomplete

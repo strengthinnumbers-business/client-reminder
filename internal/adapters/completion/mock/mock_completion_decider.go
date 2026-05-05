@@ -13,42 +13,43 @@ type key struct {
 
 type CompletionDecider struct {
 	mu       sync.Mutex
-	Verdicts map[key]entities.CompletionVerdict
+	Verdicts map[key]entities.CompletionVerdictStatus
 	Error    error
 	Resets   []key
 }
 
-func (m *CompletionDecider) SetVerdict(customerID, periodID string, verdict entities.CompletionVerdict) {
+func (m *CompletionDecider) SetVerdict(customerID, periodID string, verdict entities.CompletionVerdictStatus) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if m.Verdicts == nil {
-		m.Verdicts = make(map[key]entities.CompletionVerdict)
+		m.Verdicts = make(map[key]entities.CompletionVerdictStatus)
 	}
 	m.Verdicts[key{customerID: customerID, periodID: periodID}] = verdict
 }
 
-func (m *CompletionDecider) IsCompleted(c entities.Client, p entities.Period) (entities.CompletionVerdict, error) {
+func (m *CompletionDecider) GetVerdict(c entities.Client, p entities.Period) (entities.CompletionVerdictTask, error) {
 	if m.Error != nil {
-		return entities.CompletionVerdictNotRequested, m.Error
+		return entities.CompletionVerdictTask{Status: entities.CompletionVerdictNotRequested}, m.Error
 	}
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	k := key{customerID: c.ID, periodID: p.ID}
 	if m.Verdicts == nil {
-		return entities.CompletionVerdictNotRequested, nil
+		return entities.CompletionVerdictTask{ID: stateKey(k), Status: entities.CompletionVerdictNotRequested}, nil
 	}
-	v, ok := m.Verdicts[key{customerID: c.ID, periodID: p.ID}]
+	v, ok := m.Verdicts[k]
 	if !ok {
-		return entities.CompletionVerdictNotRequested, nil
+		return entities.CompletionVerdictTask{ID: stateKey(k), Status: entities.CompletionVerdictNotRequested}, nil
 	}
-	return v, nil
+	return entities.CompletionVerdictTask{ID: stateKey(k), Status: v}, nil
 }
 
-func (m *CompletionDecider) ResetCompletionVerdict(c entities.Client, p entities.Period) error {
+func (m *CompletionDecider) RequestNewCompletionVerdict(c entities.Client, p entities.Period, changesSummary string) (entities.CompletionVerdictTask, error) {
 	if m.Error != nil {
-		return m.Error
+		return entities.CompletionVerdictTask{}, m.Error
 	}
 
 	m.mu.Lock()
@@ -60,5 +61,9 @@ func (m *CompletionDecider) ResetCompletionVerdict(c entities.Client, p entities
 		m.Verdicts[k] = entities.CompletionVerdictNotRequested
 	}
 
-	return nil
+	return entities.CompletionVerdictTask{ID: stateKey(k), Status: entities.CompletionVerdictNotRequested, ChangesSummary: changesSummary}, nil
+}
+
+func stateKey(k key) string {
+	return k.customerID + "::" + k.periodID
 }

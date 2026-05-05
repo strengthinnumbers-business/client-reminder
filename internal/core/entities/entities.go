@@ -70,14 +70,21 @@ type ClientState struct {
 	SendLog  []SendLogEntry
 }
 
-type CompletionVerdict int
+type CompletionVerdictStatus int
 
 const (
-	CompletionVerdictNotRequested CompletionVerdict = iota
+	CompletionVerdictNotRequested CompletionVerdictStatus = iota
 	CompletionUndecided
 	CompletionIncomplete
 	CompletionComplete
 )
+
+type CompletionVerdictTask struct {
+	ID             string
+	Status         CompletionVerdictStatus
+	ChangesSummary string
+	VerdictReason  string
+}
 
 type HolidayChecker interface {
 	IsHoliday(date time.Time, region ClientRegion) (bool, error)

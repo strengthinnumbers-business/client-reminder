@@ -4,6 +4,6 @@ import "github.com/strengthinnumbers-business/client-reminder/internal/core/enti
 
 // CompletionDecider reports whether uploaded files for a period have an active or resolved verdict.
 type CompletionDecider interface {
-	IsCompleted(c entities.Client, p entities.Period) (entities.CompletionVerdict, error)
-	ResetCompletionVerdict(c entities.Client, p entities.Period) error
+	GetVerdict(c entities.Client, p entities.Period) (entities.CompletionVerdictTask, error)
+	RequestNewCompletionVerdict(c entities.Client, p entities.Period, changesSummary string) (entities.CompletionVerdictTask, error)
 }
