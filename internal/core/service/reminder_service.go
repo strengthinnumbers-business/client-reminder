@@ -3,8 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
@@ -63,7 +61,7 @@ func NewReminderService(
 		reminderSendRepo:     reminderSendRepo,
 		periodResolutionRepo: periodResolutionRepo,
 		adminAlerter:         adminAlerter,
-		uploadSnapshotter:    noopUploadSnapshotter{},
+		uploadSnapshotter:    ports.NoopUploadSnapshotter{},
 		logger:               ports.NoopLogger{},
 		clock:                clock,
 	}
@@ -109,12 +107,12 @@ func (s *ReminderService) Run(ctx context.Context) (RunResult, error) {
 
 	for _, client := range clients {
 		currentPeriod := entities.CurrentPeriod(client.PeriodType, now)
-		s.logger.Demo("evaluating client", "client_id", client.ID, "client_name", client.Name, "email", client.Email, "period_type", periodTypeName(client.PeriodType), "current_period", currentPeriod.ID, "region", client.Region, "email_style", client.EmailStyle, "reminder_gaps", client.ReminderGaps.Effective())
+		s.logger.Demo("evaluating client", "client_id", client.ID, "client_name", client.Name, "email", client.Email, "period_type", client.PeriodType.Name(), "current_period", currentPeriod.ID, "region", client.Region, "email_style", client.EmailStyle, "reminder_gaps", client.ReminderGaps.Effective())
 
-		changes := diffSnapshots(filterSnapshot(previousSnapshot, client.FolderPath), filterSnapshot(currentSnapshot, client.FolderPath))
-		if changes.any() {
-			changesSummary := changes.summary()
-			s.logger.Demo("requesting upload review verdict for changed files", "client_id", client.ID, "period", currentPeriod.ID, "added", len(changes.added), "changed", len(changes.changed), "deleted", len(changes.deleted))
+		changes := entities.DiffSnapshots(previousSnapshot.Filter(client.FolderPath), currentSnapshot.Filter(client.FolderPath))
+		if changes.Any() {
+			changesSummary := changes.Summary()
+			s.logger.Demo("requesting upload review verdict for changed files", "client_id", client.ID, "period", currentPeriod.ID, "added", len(changes.Added), "changed", len(changes.Changed), "deleted", len(changes.Deleted))
 			if _, err := s.completionDecider.RequestNewCompletionVerdict(client, currentPeriod, changesSummary); err != nil {
 				s.logger.Error("request new completion verdict for upload changes", "client_id", client.ID, "period", currentPeriod.ID, "error", err)
 				result.Failures++
@@ -154,7 +152,7 @@ func (s *ReminderService) Run(ctx context.Context) (RunResult, error) {
 			continue
 		}
 		verdict := verdictTask.Status
-		s.logger.Demo("loaded upload review verdict", "client_id", client.ID, "period", eligibility.Period.ID, "verdict", completionVerdictName(verdict))
+		s.logger.Demo("loaded upload review verdict", "client_id", client.ID, "period", eligibility.Period.ID, "verdict", verdict.Name())
 
 		switch verdict {
 		case entities.CompletionComplete:
@@ -165,7 +163,7 @@ func (s *ReminderService) Run(ctx context.Context) (RunResult, error) {
 			s.logger.Demo("skipping reminder because upload review is undecided", "client_id", client.ID, "period", eligibility.Period.ID)
 			continue
 		case entities.CompletionVerdictNotRequested, entities.CompletionIncomplete:
-			s.logger.Demo("sending reminder because upload is not complete", "client_id", client.ID, "period", eligibility.Period.ID, "verdict", completionVerdictName(verdict))
+			s.logger.Demo("sending reminder because upload is not complete", "client_id", client.ID, "period", eligibility.Period.ID, "verdict", verdict.Name())
 			s.sendReminder(client, eligibility, client.EmailStyle, verdict, now, &result)
 		}
 	}
@@ -212,7 +210,7 @@ func (s *ReminderService) alertMissedPreviousPeriod(client entities.Client, curr
 		return false
 	}
 	verdict := verdictTask.Status
-	s.logger.Demo("loaded previous-period upload review verdict", "client_id", client.ID, "period", previousPeriod.ID, "verdict", completionVerdictName(verdict))
+	s.logger.Demo("loaded previous-period upload review verdict", "client_id", client.ID, "period", previousPeriod.ID, "verdict", verdict.Name())
 	if verdict == entities.CompletionComplete {
 		reason := "completion complete: no reminder needed"
 		s.logger.Demo("marking previous period resolved because upload is complete", "client_id", client.ID, "period", previousPeriod.ID, "reason", reason)
@@ -299,107 +297,4 @@ func RenderEmailTemplate(template string, client entities.Client, period entitie
 		"{{RunDate}}", now.Format("2006-01-02"),
 	)
 	return replacer.Replace(template)
-}
-
-type uploadChanges struct {
-	added   []string
-	changed []string
-	deleted []string
-}
-
-func (c uploadChanges) any() bool {
-	return len(c.added) > 0 || len(c.changed) > 0 || len(c.deleted) > 0
-}
-
-func (c uploadChanges) summary() string {
-	var builder strings.Builder
-	writeChangeList(&builder, "ADDED", c.added)
-	writeChangeList(&builder, "CHANGED", c.changed)
-	writeChangeList(&builder, "DELETED", c.deleted)
-	return strings.TrimSuffix(builder.String(), "\n")
-}
-
-func writeChangeList(builder *strings.Builder, heading string, paths []string) {
-	if builder.Len() > 0 {
-		builder.WriteString("\n")
-	}
-	builder.WriteString(heading)
-	builder.WriteString("\n")
-	for _, path := range paths {
-		builder.WriteString(path)
-		builder.WriteString("\n")
-	}
-}
-
-func filterSnapshot(snapshot entities.UploadSnapshot, folderPath string) entities.UploadSnapshot {
-	filtered := entities.UploadSnapshot{}
-	if folderPath == "" {
-		return filtered
-	}
-
-	folder := filepath.Clean(folderPath)
-	for filePath, checksum := range snapshot {
-		cleanPath := filepath.Clean(filePath)
-		if cleanPath == folder || strings.HasPrefix(cleanPath, folder+string(filepath.Separator)) {
-			filtered[filePath] = checksum
-		}
-	}
-	return filtered
-}
-
-func diffSnapshots(previous, current entities.UploadSnapshot) uploadChanges {
-	changes := uploadChanges{}
-	for path, currentChecksum := range current {
-		previousChecksum, ok := previous[path]
-		if !ok {
-			changes.added = append(changes.added, path)
-			continue
-		}
-		if previousChecksum != currentChecksum {
-			changes.changed = append(changes.changed, path)
-		}
-	}
-	for path := range previous {
-		if _, ok := current[path]; !ok {
-			changes.deleted = append(changes.deleted, path)
-		}
-	}
-	sort.Strings(changes.added)
-	sort.Strings(changes.changed)
-	sort.Strings(changes.deleted)
-	return changes
-}
-
-type noopUploadSnapshotter struct{}
-
-func (noopUploadSnapshotter) GetPreviousAndCurrentSnapshot() (entities.UploadSnapshot, entities.UploadSnapshot, error) {
-	return entities.UploadSnapshot{}, entities.UploadSnapshot{}, nil
-}
-
-func completionVerdictName(verdict entities.CompletionVerdictStatus) string {
-	switch verdict {
-	case entities.CompletionVerdictNotRequested:
-		return "not_requested"
-	case entities.CompletionUndecided:
-		return "undecided"
-	case entities.CompletionIncomplete:
-		return "upload_incomplete"
-	case entities.CompletionComplete:
-		return "upload_complete"
-	default:
-		return fmt.Sprintf("unknown_%d", verdict)
-	}
-}
-
-func periodTypeName(periodType entities.PeriodType) string {
-	switch periodType {
-	case entities.PeriodWeekly:
-		return "weekly"
-	case entities.PeriodMonthly:
-		return "monthly"
-	case entities.PeriodQuarterly:
-		return "quarterly"
-	default:
-		return fmt.Sprintf("unknown_%d", periodType)
-	}
 }

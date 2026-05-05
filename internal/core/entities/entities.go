@@ -1,6 +1,12 @@
 package entities
 
-import "time"
+import (
+	"fmt"
+	"path/filepath"
+	"sort"
+	"strings"
+	"time"
+)
 
 type MinimumBusinessDayGaps []int
 
@@ -65,6 +71,75 @@ type SendLogEntry struct {
 
 type UploadSnapshot map[string]string
 
+func (s UploadSnapshot) Filter(folderPath string) UploadSnapshot {
+	filtered := UploadSnapshot{}
+	if folderPath == "" {
+		return filtered
+	}
+
+	folder := filepath.Clean(folderPath)
+	for filePath, checksum := range s {
+		cleanPath := filepath.Clean(filePath)
+		if cleanPath == folder || strings.HasPrefix(cleanPath, folder+string(filepath.Separator)) {
+			filtered[filePath] = checksum
+		}
+	}
+	return filtered
+}
+
+type UploadChanges struct {
+	Added   []string
+	Changed []string
+	Deleted []string
+}
+
+func DiffSnapshots(previous, current UploadSnapshot) UploadChanges {
+	changes := UploadChanges{}
+	for path, currentChecksum := range current {
+		previousChecksum, ok := previous[path]
+		if !ok {
+			changes.Added = append(changes.Added, path)
+			continue
+		}
+		if previousChecksum != currentChecksum {
+			changes.Changed = append(changes.Changed, path)
+		}
+	}
+	for path := range previous {
+		if _, ok := current[path]; !ok {
+			changes.Deleted = append(changes.Deleted, path)
+		}
+	}
+	sort.Strings(changes.Added)
+	sort.Strings(changes.Changed)
+	sort.Strings(changes.Deleted)
+	return changes
+}
+
+func (c UploadChanges) Any() bool {
+	return len(c.Added) > 0 || len(c.Changed) > 0 || len(c.Deleted) > 0
+}
+
+func (c UploadChanges) Summary() string {
+	var builder strings.Builder
+	writeChangeList(&builder, "ADDED", c.Added)
+	writeChangeList(&builder, "CHANGED", c.Changed)
+	writeChangeList(&builder, "DELETED", c.Deleted)
+	return strings.TrimSuffix(builder.String(), "\n")
+}
+
+func writeChangeList(builder *strings.Builder, heading string, paths []string) {
+	if builder.Len() > 0 {
+		builder.WriteString("\n")
+	}
+	builder.WriteString(heading)
+	builder.WriteString("\n")
+	for _, path := range paths {
+		builder.WriteString(path)
+		builder.WriteString("\n")
+	}
+}
+
 type ClientState struct {
 	ClientID string
 	SendLog  []SendLogEntry
@@ -78,6 +153,21 @@ const (
 	CompletionIncomplete
 	CompletionComplete
 )
+
+func (s CompletionVerdictStatus) Name() string {
+	switch s {
+	case CompletionVerdictNotRequested:
+		return "not_requested"
+	case CompletionUndecided:
+		return "undecided"
+	case CompletionIncomplete:
+		return "upload_incomplete"
+	case CompletionComplete:
+		return "upload_complete"
+	default:
+		return fmt.Sprintf("unknown_%d", s)
+	}
+}
 
 type CompletionVerdictTask struct {
 	ID             string

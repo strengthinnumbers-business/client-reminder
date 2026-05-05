@@ -7,3 +7,9 @@ type CompletionDecider interface {
 	GetVerdict(c entities.Client, p entities.Period) (entities.CompletionVerdictTask, error)
 	RequestNewCompletionVerdict(c entities.Client, p entities.Period, changesSummary string) (entities.CompletionVerdictTask, error)
 }
+
+type NoopUploadSnapshotter struct{}
+
+func (NoopUploadSnapshotter) GetPreviousAndCurrentSnapshot() (entities.UploadSnapshot, entities.UploadSnapshot, error) {
+	return entities.UploadSnapshot{}, entities.UploadSnapshot{}, nil
+}

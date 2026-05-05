@@ -13,6 +13,19 @@ const (
 	PeriodQuarterly
 )
 
+func (t PeriodType) Name() string {
+	switch t {
+	case PeriodWeekly:
+		return "weekly"
+	case PeriodMonthly:
+		return "monthly"
+	case PeriodQuarterly:
+		return "quarterly"
+	default:
+		return fmt.Sprintf("unknown_%d", t)
+	}
+}
+
 type Period struct {
 	Type PeriodType
 	ID   string
