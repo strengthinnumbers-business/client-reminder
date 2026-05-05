@@ -80,3 +80,14 @@ try-notion-client-repository:
 	go run scripts/try-notion-client-repository.go \
 	--notion-api-key "$(NOTION_API_KEY)" \
 	--data-source-id "$(NOTION_CLIENTS_DATA_SOURCE_ID)"
+
+
+.PHONY: sync-uploads
+sync-uploads:
+	rclone copy \
+	--create-empty-src-dirs \
+	--ignore-size \
+	--ignore-times \
+	--verbose \
+	'$(RCLONE_REMOTE_FULL_PATH)' \
+	./state/upload-folders/
