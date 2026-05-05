@@ -1,60 +1,42 @@
-Always update AGENTS.md with the latest learnings and emerging conventions. If sections in AGENTS.md become too big, refactor those sections into Markdown files in the `/context/` folder.
+# Agent Notes
 
-Keep README.md at a high level overview, only. If README.md really needs details, then link to the relevant section(s) in AGENTS.md or the relevant files in `/context/`.
+## Commands
 
----
+- Use an absolute repo-local Go cache to avoid sandbox/cache permission issues: `GOCACHE="$(pwd)/.gocache" go test ./...`.
+- `make test` only runs `go test ./internal/...`; use `go test ./...` when changes may affect `cmd/...` or bootstrap wiring.
+- Run the production app with `go run ./cmd/client-reminder`; run demo wiring with `go run ./cmd/demo-client-reminder`.
+- Docker builds only the production entrypoint: `docker build -t client-reminder .` builds `./cmd/client-reminder` into an Alpine image.
+- Manual Notion helpers are `//go:build ignore` scripts under `scripts/`; run them with `go run scripts/<name>.go`, not as packages.
 
-This is a Go app to send regular email reminders to clients / customers, reminding them to upload their recent data to a file folder shared on the internet.
+## Architecture Boundaries
 
-The app runs in a Docker container, once a day, scheduled via a cron job or similar. During that scheduled run, it checks it's current configuration and currently stored state, and depending on that, decides which emails to send to which recipient.
+- This is a hexagonal Go service: core domain and flow live under `internal/core`, runtime side effects live under `internal/adapters`, and composition lives under `internal/bootstrap`.
+- Core ports in `internal/core/ports` must stay free of adapter/storage/API types; do not leak Notion payloads, JSON file records, SMTP details, or HTTP response shapes into core.
+- `cmd/client-reminder` uses JSON-file client/completion/state adapters and SMTP; `cmd/demo-client-reminder` uses Notion clients/tasks plus JSON send/period state and SMTP.
+- Keep demo-only behavior in `internal/bootstrap/wire-demo.go` or outer adapters. The core should receive injected clock/logger abstractions, not demo-specific conditionals.
 
-The app is constructed after the principles of the "hexagonal microservice architecture". I.e. the business entities and the business logic are at the core of the service, and are completely independent of any implementation details that connect them to the outside world, like email services, state storage / repository or configuration storage / repository, etc. The inner core defines the interfaces for the connections to the outside world that it needs. Those connections are called "ports".
-For each port we provide at least 2 "adapters".
-One adapter is a mock adapter to help with testing. It fulfills the contract of the port only by name, but has no further side effects other than help with test assertions.
-The other adapter implements an actual connection to a real service or facility that will have the actual intended side effects, like sending actual emails, or provide true persistence for storing state and / or configuration.
-These "port" interfaces MUST BE FREE OF any implementation details of any and all outside adapter implementations.
+## Runtime Configuration
 
-Ports MUST STAY FREE of any adapter details at all times!
+- Production bootstrap requires `SMTP_HOST`, `SMTP_FROM`, and `ADMIN_EMAIL`; email body content must come from `EMAIL_TEMPLATE_PATH` or `EMAIL_BODY_TEMPLATE`.
+- Important default paths are `configs/clients.json`, `state/completion-verdicts.json`, `state/reminder-sends.json`, `state/period-resolutions.json`, and `state/holiday-cache`.
+- `LOG_LEVEL` accepts `demo`, `debug`, `info`/empty, and `error`; demo logs are intentionally audience-facing for demo runs.
+- Demo bootstrap requires `NOW` parseable as `YYYY-MM-DD` or RFC3339, plus Notion data source IDs via `NOTION_CLIENTS_DATA_SOURCE_ID` and `NOTION_TASKS_DATA_SOURCE_ID`.
 
-I.e. the core package MUST NOT have any dependencies on any of the adapters or any of their implementation details, like any Go types that represent storage data in a format that is specific to the storage backend, like DB rows, etc., or API requests and responses of the email sending service, etc.
+## Scheduling And State
 
-You can find all ports [here](./internal/core/ports).
+- Reminder scheduling uses per-email minimum business-day gaps in `Client.ReminderGaps`; empty gaps default to `entities.ReminderGapsStandard`.
+- Scheduling details and accepted edge cases are in `context/PERIODS_AND_SEQUENCES.md` and `context/KNOWN_SCHEDULING_EDGE_CASES.md`; consult them before changing reminder sequence behavior.
+- Failed sends are recorded for diagnostics but must not advance the sequence; only successful sends returned by `ListSuccessfulSends` determine the next sequence index.
+- Reminder send JSON persistence is a flat object with `sends: []entities.SendLogEntry`; `ClientID` belongs directly on each entry.
+- Missing completion verdicts mean `CompletionVerdictNotRequested` and reminders continue; `CompletionUndecided` pauses reminders; `CompletionIncomplete` sends then resets the verdict.
 
-You can find all business entities [here](./internal/core/entities).
+## Adapters And External Services
 
-When building this app, please set the GOCACHE env var to an absolute path pointing at the `./.gocache` sub-dir to avoid sandbox issues.
-
-Demo-specific wiring lives in `./internal/bootstrap/wire-demo.go` and the demo entrypoint lives in `./cmd/demo-client-reminder/main.go`. The app supports injecting the current timestamp through an environment variable for deterministic demos; keep demo-only wiring outside the core and inject diagnostic logging so production can use a no-op implementation. The demo is expected to run end-to-end against test Notion data and a real inbox, so demo affordances should make Notion-sourced client and upload-review-task changes visibly explain resulting email behavior. Use `Logger.Demo` for audience-facing trace logs that explain live demo decisions and adapter actions; keep core demo logs in core domain terms, and put Notion/SMTP/filesystem details in the outer adapters.
-
-Standalone development helper scripts live in `./scripts`. Keep them self-contained and runnable with `go run`; for example, `scripts/print-calendar-comments.go` prints pasteable Go-comment calendars for scheduling tests. Scripts that need subcommands should use `github.com/alecthomas/kong`; bind interface-typed command dependencies with `kong.BindTo(value, (*Interface)(nil))`. `scripts/try-notion-api-client.go` manually exercises the sparse Notion API client against a real Notion connection and accepts `--notion-api-key` or falls back to `NOTION_API_KEY`; use its `retrieve-page --page-id PAGE_ID` subcommand to inspect full page property payloads, `create-task-page` to create a property-only task page under a data source, and `update-task-page` to update one select property on a task page. `scripts/try-notion-client-repository.go` manually exercises the composed Notion API client plus Notion-backed client repository with `--data-source-id` and prints mapped core clients as JSON.
-
-Adapter isolation should be tested in layers: fake the adapter's immediate dependency for fast mapping/contract tests, inject an `http.Client` or local test server for protocol-level tests, and use opt-in manual or integration helpers for real external services. Real-service helpers should live in `./scripts` or be guarded behind explicit environment variables/build tags so ordinary `go test ./...` stays deterministic and does not call the network.
-
-Adapter constructors that need optional test seams should prefer `New(required, options ...Option)` with `With...` option helpers, following `internal/adapters/notionapi`. For `internal/adapters/holiday/canadaholidaysapi`, keep `cacheDir` as the fixed first constructor parameter and configure base URL, cache TTL, HTTP client, and clock through options.
-
-Scheduling details and known edge cases are documented in:
-
-- [Periods and Sequences](./context/PERIODS_AND_SEQUENCES.md)
-- [Known Scheduling Edge Cases](./context/KNOWN_SCHEDULING_EDGE_CASES.md)
-
-Reminder scheduling uses per-email minimum business-day gaps in the `ReminderGaps` client field. Successful sends advance the sequence; failed sends are only logged for debugging. Missing completion verdicts mean `CompletionVerdictNotRequested`, so reminders continue until an upload triggers `CompletionUndecided`.
-
-Reminder email templates are retrieved through `GlobalConfiguration.GetEmailBodyTemplate(sequenceIndex, style)`, using the current `ReminderEligibility.SequenceIndex` and `Client.EmailStyle`. The port returns both subject and body templates; `EmailSender.SendEmail` accepts the rendered subject explicitly.
-
-Reminder send logs store `ClientID` directly on each `SendLogEntry`; JSON reminder-send persistence should marshal a flat `[]SendLogEntry` under `sends`, not wrap entries in adapter-specific record objects.
-
-Log all errors to allow diagnosing any failed operation, if available with added context like client and period, etc.
-
-Application logging goes through the core-owned `ports.Logger` interface. The core and adapters must not use package-level `log`/`slog` directly; inject a logger with `WithLogger` constructor options and default to `ports.NoopLogger` when none is provided. The `internal/adapters/logging/slog` adapter is the real `log/slog` implementation; set its minimum level to `info` to make debug logging a no-op, or `error` to make debug and info logging no-ops.
-
-Shared sparse Notion API code lives in `./internal/adapters/notionapi` so multiple outer adapters can reuse it without leaking Notion request / response details into core ports. It only supports the endpoints this app needs, uses internal-connection tokens from `NOTION_API_KEY`, sends the current `Notion-Version` header, and spaces every API request at least 333 ms after the previous request ends.
-
-Notion property shape helpers belong in `./internal/adapters/notionapi`; use `notionapi.Properties.Text(name)` to extract common text-like values from Notion properties instead of duplicating property-type switches in outer adapters.
-
-Use `notionapi.Client.RetrievePage` for Notion page property values that are not reliably present in data-source query results, such as single-value `people` and `relation` fields. Do not add the page-property-item endpoint unless the app starts supporting properties with more than 25 references or multi-value people/relation fields that need pagination.
-
-Use `notionapi.Client.CreatePage` for sparse Notion page creation under a data source; it intentionally supports property-only creation with title, single-entry rich text, relation, and select helpers. Use `notionapi.Client.UpdatePageSelect` for the currently supported page update flow, which only changes one select property by name.
-
-Notion-backed client configuration lives in `./internal/adapters/client/notion`. Keep Notion field-name mapping configurable there; the default field names mirror the current Notion information architecture and include `Contact Email`, `Period Type`, `Schedule Preset`, and `Status`. Client queries should filter Notion `Status` to `active`, and the repository should return core `entities.Client` values only.
-
-Notion-backed completion decisions live in `./internal/adapters/completion/notion` and read Task pages from the "Test Upload Review Tasks" data source. The adapter maps `Status` select values `unset`, `undecided`, `upload_incomplete`, and `upload_complete` to core `CompletionVerdict` values, caches the processed query results once per app execution, and stores each Task page ID in the cache so `ResetCompletionVerdict` can update the Task `Status` back to `unset` with `notionapi.Client.UpdatePageSelect`.
+- Constructors with optional seams use `New(required, options ...Option)` and `With...` helpers; keep `canadaholidaysapi.New(cacheDir, options...)` with `cacheDir` as the fixed first parameter.
+- Application logging goes through the core-owned `ports.Logger`; do not add package-level `log`/`slog` calls in core or adapters.
+- Ordinary `go test ./...` must stay deterministic and offline; real-service checks belong in `scripts` or behind explicit env/build-tag gates.
+- Shared sparse Notion API code lives in `internal/adapters/notionapi`; reuse it instead of duplicating Notion request/response mapping in higher-level adapters.
+- The Notion API client uses internal-connection tokens from `NOTION_API_KEY`, Notion-Version `2026-03-11`, a default 333 ms gap between requests, and one retry for 429 responses.
+- Use `notionapi.Properties.Text(name)` for common Notion text-like extraction; only add page-property-item support if multi-value people/relation pagination becomes required.
+- Notion client configuration maps active Notion pages to core `entities.Client`; default field names include `Contact Email`, `Period Type`, `Schedule Preset`, and `Status`, and queries filter `Status` to `active`.
+- Notion completion maps task `Status` values `unset`, `undecided`, `upload_incomplete`, and `upload_complete`; it caches the queried task snapshot once per app run and resets incomplete tasks to `unset` with `UpdatePageSelect`.
