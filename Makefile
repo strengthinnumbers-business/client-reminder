@@ -96,7 +96,19 @@ sync-uploads:
 	'$(RCLONE_REMOTE_FULL_PATH)' \
 	$(UPLOAD_DIR)
 
+.PHONY: logger-ui
+logger-ui:
+	-podman compose up
 
 .PHONY: run
 run: sync-uploads
-	LOG_LEVEL=demo go run cmd/demo-client-reminder/main.go
+	LOG_LEVEL=demo \
+	go run cmd/demo-client-reminder/main.go
+
+
+.PHONY: run-logged
+run-logged: logger-ui sync-uploads
+	LOG_LEVEL=demo \
+	LOKI_URL=http://localhost:3100 \
+	LOKI_LABELS="env=local,service=client-reminder" \
+	go run cmd/demo-client-reminder/main.go

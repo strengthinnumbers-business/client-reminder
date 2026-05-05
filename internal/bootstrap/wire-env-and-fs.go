@@ -11,6 +11,8 @@ import (
 	configenv "github.com/strengthinnumbers-business/client-reminder/internal/adapters/config/env"
 	emailsmtp "github.com/strengthinnumbers-business/client-reminder/internal/adapters/email/smtp"
 	holidaycanada "github.com/strengthinnumbers-business/client-reminder/internal/adapters/holiday/canadaholidaysapi"
+	"github.com/strengthinnumbers-business/client-reminder/internal/adapters/logging/fanout"
+	lokiadapter "github.com/strengthinnumbers-business/client-reminder/internal/adapters/logging/loki"
 	slogadapter "github.com/strengthinnumbers-business/client-reminder/internal/adapters/logging/slog"
 	periodresolutionjson "github.com/strengthinnumbers-business/client-reminder/internal/adapters/periodresolution/jsonfile"
 	remindersendjson "github.com/strengthinnumbers-business/client-reminder/internal/adapters/remindersend/jsonfile"
@@ -81,7 +83,15 @@ func envOrDefault(key, fallback string) string {
 }
 
 func loggerFromEnv() ports.Logger {
-	return slogadapter.NewText(os.Stderr, logLevelFromEnv())
+	level := logLevelFromEnv()
+	stderrLogger := slogadapter.NewText(os.Stderr, level)
+	lokiURL := os.Getenv("LOKI_URL")
+	if lokiURL == "" {
+		return stderrLogger
+	}
+
+	lokiLogger := lokiadapter.New(lokiURL, lokiadapter.Level(level), lokiadapter.WithLabels(lokiLabelsFromEnv()))
+	return fanout.New(stderrLogger, lokiLogger)
 }
 
 func logLevelFromEnv() slogadapter.Level {
@@ -97,4 +107,24 @@ func logLevelFromEnv() slogadapter.Level {
 	default:
 		return slogadapter.LevelInfo
 	}
+}
+
+func lokiLabelsFromEnv() map[string]string {
+	labels := make(map[string]string)
+	raw := os.Getenv("LOKI_LABELS")
+	if raw == "" {
+		return labels
+	}
+	for _, part := range strings.Split(raw, ",") {
+		key, value, ok := strings.Cut(part, "=")
+		if !ok {
+			continue
+		}
+		key = strings.TrimSpace(key)
+		value = strings.TrimSpace(value)
+		if key != "" && value != "" {
+			labels[key] = value
+		}
+	}
+	return labels
 }
