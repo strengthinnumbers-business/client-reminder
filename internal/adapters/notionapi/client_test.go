@@ -307,6 +307,40 @@ func TestUpdatePageSelectUpdatesSingleSelectProperty(t *testing.T) {
 	}
 }
 
+func TestUpdatePageInTrashUpdatesTrashStatus(t *testing.T) {
+	httpClient := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		if got, want := r.Method, http.MethodPatch; got != want {
+			t.Fatalf("unexpected method: got %s want %s", got, want)
+		}
+		if got, want := r.URL.Path, "/v1/pages/page-1"; got != want {
+			t.Fatalf("unexpected path: got %s want %s", got, want)
+		}
+
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		assertJSONEqual(t, body, map[string]any{
+			"in_trash": true,
+		})
+
+		return jsonResponse(http.StatusOK, map[string]any{
+			"object":     "page",
+			"id":         "page-1",
+			"in_trash":   true,
+			"properties": map[string]any{},
+		}), nil
+	})}
+
+	page, err := New("secret", WithBaseURL("https://api.notion.test/v1"), WithHTTPClient(httpClient), WithRequestGap(0)).UpdatePageInTrash(context.Background(), "page-1", true)
+	if err != nil {
+		t.Fatalf("UpdatePageInTrash returned error: %v", err)
+	}
+	if !page.InTrash {
+		t.Fatal("expected page to be in trash")
+	}
+}
+
 func TestClientWaitsBetweenRequests(t *testing.T) {
 	var requestTimes []time.Time
 	httpClient := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {

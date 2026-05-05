@@ -73,6 +73,7 @@ type Page struct {
 	Properties     Properties `json:"properties"`
 	CreatedTime    string     `json:"created_time"`
 	LastEditedTime string     `json:"last_edited_time"`
+	InTrash        bool       `json:"in_trash"`
 }
 
 type Properties map[string]Property
@@ -414,6 +415,21 @@ func (c *Client) UpdatePageSelect(ctx context.Context, pageID string, request Up
 		return Page{}, fmt.Errorf("update Notion page %s select property %q: %w", pageID, request.PropertyName, err)
 	}
 	c.logger.Demo("updated Notion select property", "page_id", pageID, "property", request.PropertyName, "select", request.SelectName)
+	return page, nil
+}
+
+func (c *Client) UpdatePageInTrash(ctx context.Context, pageID string, inTrash bool) (Page, error) {
+	body := map[string]any{
+		"in_trash": inTrash,
+	}
+
+	c.logger.Demo("updating Notion page trash status", "page_id", pageID, "in_trash", inTrash)
+	var page Page
+	path := fmt.Sprintf("/pages/%s", url.PathEscape(pageID))
+	if err := c.doJSON(ctx, http.MethodPatch, path, nil, body, &page); err != nil {
+		return Page{}, fmt.Errorf("update Notion page %s trash status: %w", pageID, err)
+	}
+	c.logger.Demo("updated Notion page trash status", "page_id", pageID, "in_trash", inTrash)
 	return page, nil
 }
 
