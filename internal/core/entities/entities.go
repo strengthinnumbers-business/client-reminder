@@ -62,6 +62,8 @@ type SendLogEntry struct {
 	ErrorMessage  string
 }
 
+type UploadSnapshot map[string]string
+
 type ClientState struct {
 	ClientID string
 	SendLog  []SendLogEntry
