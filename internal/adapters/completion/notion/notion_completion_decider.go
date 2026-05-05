@@ -135,7 +135,7 @@ func (d *CompletionDecider) RequestNewCompletionVerdict(c entities.Client, p ent
 			d.fields.Title:          notionapi.TitleProperty(completionTaskTitle(c, p)),
 			d.fields.PeriodKey:      notionapi.RichTextProperty(p.ID),
 			d.fields.ReminderClient: notionapi.RelationProperty(c.ID),
-			d.fields.Status:         notionapi.SelectProperty("unset"),
+			d.fields.Status:         notionapi.SelectProperty("undecided"),
 			d.fields.ChangesSummary: notionapi.RichTextProperty(changesSummary),
 			d.fields.VerdictReason:  notionapi.RichTextProperty(""),
 		},
