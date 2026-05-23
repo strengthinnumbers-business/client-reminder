@@ -93,6 +93,7 @@ sync-uploads:
 	--ignore-size \
 	--ignore-times \
 	--verbose \
+	--protondrive-enable-caching=false \
 	'$(RCLONE_REMOTE_FULL_PATH)' \
 	$(UPLOAD_DIR)
 
