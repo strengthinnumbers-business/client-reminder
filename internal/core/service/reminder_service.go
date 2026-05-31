@@ -90,29 +90,29 @@ func (s *ReminderService) Run(ctx context.Context) (RunResult, error) {
 	_ = ctx
 
 	now := s.clock().UTC()
-	s.logger.Demo("starting reminder run", "run_date", now.Format(time.DateOnly), "run_time_utc", now.Format(time.RFC3339))
+	s.logger.DemoBelow("starting reminder run", "run_date", now.Format(time.DateOnly), "run_time_utc", now.Format(time.RFC3339))
 
 	clients, err := s.clientRepo.GetAllClients()
 	if err != nil {
 		return RunResult{}, fmt.Errorf("load clients: %w", err)
 	}
-	s.logger.Demo("loaded active clients", "count", len(clients))
+	s.logger.DemoAbove("loaded active clients", "count", len(clients))
 
 	result := RunResult{TotalCustomers: len(clients)}
 	previousSnapshot, currentSnapshot, err := s.uploadSnapshotter.GetPreviousAndCurrentSnapshot()
 	if err != nil {
 		return RunResult{}, fmt.Errorf("snapshot uploads: %w", err)
 	}
-	s.logger.Demo("loaded upload snapshots", "previous_files", len(previousSnapshot), "current_files", len(currentSnapshot))
+	s.logger.DemoAbove("loaded upload snapshots", "previous_files", len(previousSnapshot), "current_files", len(currentSnapshot))
 
 	for _, client := range clients {
 		currentPeriod := entities.CurrentPeriod(client.PeriodType, now)
-		s.logger.Demo("evaluating client", "client_id", client.ID, "client_name", client.Name, "email", client.Email, "period_type", client.PeriodType.Name(), "current_period", currentPeriod.ID, "region", client.Region, "email_style", client.EmailStyle, "reminder_gaps", client.ReminderGaps.Effective())
+		s.logger.DemoSurrounding("evaluating client", "client_id", client.ID, "client_name", client.Name, "email", client.Email, "period_type", client.PeriodType.Name(), "current_period", currentPeriod.ID, "region", client.Region, "email_style", client.EmailStyle, "reminder_gaps", client.ReminderGaps.Effective())
 
 		changes := entities.DiffSnapshots(previousSnapshot.Filter(client.FolderPath), currentSnapshot.Filter(client.FolderPath))
 		if changes.Any() {
 			changesSummary := changes.Summary()
-			s.logger.Demo("requesting upload review verdict for changed files", "client_id", client.ID, "period", currentPeriod.ID, "added", len(changes.Added), "changed", len(changes.Changed), "deleted", len(changes.Deleted))
+			s.logger.DemoBelow("requesting upload review verdict for changed files", "client_id", client.ID, "period", currentPeriod.ID, "added", len(changes.Added), "changed", len(changes.Changed), "deleted", len(changes.Deleted))
 			if _, err := s.completionDecider.RequestNewCompletionVerdict(client, currentPeriod, changesSummary); err != nil {
 				s.logger.Error("request new completion verdict for upload changes", "client_id", client.ID, "period", currentPeriod.ID, "error", err)
 				result.Failures++
@@ -131,7 +131,7 @@ func (s *ReminderService) Run(ctx context.Context) (RunResult, error) {
 			result.Failures++
 			continue
 		}
-		s.logger.Demo("loaded previous successful sends for current period", "client_id", client.ID, "period", currentPeriod.ID, "count", len(successfulSends))
+		s.logger.DemoAbove("loaded previous successful sends for current period", "client_id", client.ID, "period", currentPeriod.ID, "count", len(successfulSends))
 
 		eligibility, ok, err := schedule.NextEligibility(now, successfulSends, s.holidayChecker)
 		if err != nil {
@@ -140,10 +140,10 @@ func (s *ReminderService) Run(ctx context.Context) (RunResult, error) {
 			continue
 		}
 		if !ok {
-			s.logger.Demo("client is not eligible for a reminder today", "client_id", client.ID, "period", currentPeriod.ID, "successful_send_count", len(successfulSends), "configured_sequence_count", len(client.ReminderGaps.Effective()))
+			s.logger.DemoSurrounding("client is not eligible for a reminder today", "client_id", client.ID, "period", currentPeriod.ID, "successful_send_count", len(successfulSends), "configured_sequence_count", len(client.ReminderGaps.Effective()))
 			continue
 		}
-		s.logger.Demo("client is eligible for a reminder", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex, "earliest_date", eligibility.EarliestDate.Format(time.DateOnly))
+		s.logger.DemoAbove("client is eligible for a reminder", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex, "earliest_date", eligibility.EarliestDate.Format(time.DateOnly))
 
 		verdictTask, err := s.completionDecider.GetVerdict(client, eligibility.Period)
 		if err != nil {
@@ -152,33 +152,33 @@ func (s *ReminderService) Run(ctx context.Context) (RunResult, error) {
 			continue
 		}
 		verdict := verdictTask.Status
-		s.logger.Demo("loaded upload review verdict", "client_id", client.ID, "period", eligibility.Period.ID, "verdict", verdict.Name())
+		s.logger.DemoAbove("loaded upload review verdict", "client_id", client.ID, "period", eligibility.Period.ID, "verdict", verdict.Name())
 
 		switch verdict {
 		case entities.CompletionComplete:
-			s.logger.Demo("skipping reminder because upload is marked complete", "client_id", client.ID, "period", eligibility.Period.ID)
+			s.logger.DemoSurrounding("skipping reminder because upload is marked complete", "client_id", client.ID, "period", eligibility.Period.ID)
 			result.SkippedDone++
 			continue
 		case entities.CompletionUndecided:
-			s.logger.Demo("skipping reminder because upload review is undecided", "client_id", client.ID, "period", eligibility.Period.ID)
+			s.logger.DemoSurrounding("skipping reminder because upload review is undecided", "client_id", client.ID, "period", eligibility.Period.ID)
 			continue
 		case entities.CompletionVerdictNotRequested, entities.CompletionIncomplete:
-			s.logger.Demo("sending reminder because upload is not complete", "client_id", client.ID, "period", eligibility.Period.ID, "verdict", verdict.Name())
+			s.logger.DemoSurrounding("sending reminder because upload is not complete", "client_id", client.ID, "period", eligibility.Period.ID, "verdict", verdict.Name())
 			s.sendReminder(client, eligibility, client.EmailStyle, verdict, now, &result)
 		}
 	}
 
-	s.logger.Demo("finished reminder run", "total_clients", result.TotalCustomers, "sent", result.Sent, "skipped_done", result.SkippedDone, "missed_period_alerts", result.MissedPeriodAlerts, "failures", result.Failures)
+	s.logger.DemoAbove("finished reminder run", "total_clients", result.TotalCustomers, "sent", result.Sent, "skipped_done", result.SkippedDone, "missed_period_alerts", result.MissedPeriodAlerts, "failures", result.Failures)
 	return result, nil
 }
 
 func (s *ReminderService) alertMissedPreviousPeriod(client entities.Client, currentPeriod entities.Period, result *RunResult) bool {
 	previousPeriod := currentPeriod.Previous()
 	if previousPeriod.ID == "" {
-		s.logger.Demo("previous period could not be determined", "client_id", client.ID, "current_period", currentPeriod.ID)
+		s.logger.DemoSurrounding("previous period could not be determined", "client_id", client.ID, "current_period", currentPeriod.ID)
 		return false
 	}
-	s.logger.Demo("checking whether previous period was missed", "client_id", client.ID, "previous_period", previousPeriod.ID)
+	s.logger.DemoBelow("checking whether previous period was missed", "client_id", client.ID, "previous_period", previousPeriod.ID)
 
 	dealtWith, err := s.periodResolutionRepo.IsDealtWith(client, previousPeriod)
 	if err != nil {
@@ -187,7 +187,7 @@ func (s *ReminderService) alertMissedPreviousPeriod(client entities.Client, curr
 		return false
 	}
 	if dealtWith {
-		s.logger.Demo("previous period already resolved", "client_id", client.ID, "period", previousPeriod.ID)
+		s.logger.DemoSurrounding("previous period already resolved", "client_id", client.ID, "period", previousPeriod.ID)
 		return false
 	}
 
@@ -198,10 +198,10 @@ func (s *ReminderService) alertMissedPreviousPeriod(client entities.Client, curr
 		return false
 	}
 	if len(successfulSends) > 0 {
-		s.logger.Demo("previous period had successful reminder sends", "client_id", client.ID, "period", previousPeriod.ID, "count", len(successfulSends))
+		s.logger.DemoSurrounding("previous period had successful reminder sends", "client_id", client.ID, "period", previousPeriod.ID, "count", len(successfulSends))
 		return false
 	}
-	s.logger.Demo("previous period had no successful reminder sends", "client_id", client.ID, "period", previousPeriod.ID)
+	s.logger.DemoAbove("previous period had no successful reminder sends", "client_id", client.ID, "period", previousPeriod.ID)
 
 	verdictTask, err := s.completionDecider.GetVerdict(client, previousPeriod)
 	if err != nil {
@@ -210,10 +210,10 @@ func (s *ReminderService) alertMissedPreviousPeriod(client entities.Client, curr
 		return false
 	}
 	verdict := verdictTask.Status
-	s.logger.Demo("loaded previous-period upload review verdict", "client_id", client.ID, "period", previousPeriod.ID, "verdict", verdict.Name())
+	s.logger.DemoAbove("loaded previous-period upload review verdict", "client_id", client.ID, "period", previousPeriod.ID, "verdict", verdict.Name())
 	if verdict == entities.CompletionComplete {
 		reason := "completion complete: no reminder needed"
-		s.logger.Demo("marking previous period resolved because upload is complete", "client_id", client.ID, "period", previousPeriod.ID, "reason", reason)
+		s.logger.DemoSurrounding("marking previous period resolved because upload is complete", "client_id", client.ID, "period", previousPeriod.ID, "reason", reason)
 		if err := s.periodResolutionRepo.MarkDealtWith(client, previousPeriod, reason); err != nil {
 			s.logger.Error("mark previous period dealt with", "client_id", client.ID, "period", previousPeriod.ID, "error", err)
 			result.Failures++
@@ -222,7 +222,7 @@ func (s *ReminderService) alertMissedPreviousPeriod(client entities.Client, curr
 	}
 
 	reason := "admin alerted: period ended with no successful reminders"
-	s.logger.Demo("alerting admin about missed previous period", "client_id", client.ID, "period", previousPeriod.ID, "reason", reason)
+	s.logger.DemoBelow("alerting admin about missed previous period", "client_id", client.ID, "period", previousPeriod.ID, "reason", reason)
 	if err := s.adminAlerter.AlertMissedPeriod(client, previousPeriod, reason); err != nil {
 		s.logger.Error("alert missed previous period", "client_id", client.ID, "period", previousPeriod.ID, "error", err)
 		result.Failures++
@@ -238,7 +238,7 @@ func (s *ReminderService) alertMissedPreviousPeriod(client entities.Client, curr
 }
 
 func (s *ReminderService) sendReminder(client entities.Client, eligibility entities.ReminderEligibility, emailStyle string, verdict entities.CompletionVerdictStatus, now time.Time, result *RunResult) {
-	s.logger.Demo("loading reminder email template", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex, "style", emailStyle)
+	s.logger.DemoBelow("loading reminder email template", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex, "style", emailStyle)
 	subjectTemplate, bodyTemplate, err := s.globalConfig.GetEmailBodyTemplate(eligibility.SequenceIndex, emailStyle)
 	if err != nil {
 		s.logger.Error("load email template", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex, "style", emailStyle, "error", err)
@@ -248,7 +248,7 @@ func (s *ReminderService) sendReminder(client entities.Client, eligibility entit
 
 	subjectLine := RenderEmailTemplate(subjectTemplate, client, eligibility.Period, now)
 	body := RenderEmailTemplate(bodyTemplate, client, eligibility.Period, now)
-	s.logger.Demo("rendered reminder email", "client_id", client.ID, "period", eligibility.Period.ID, "to", client.Email, "subject", subjectLine, "body_bytes", len(body))
+	s.logger.DemoAbove("rendered reminder email", "client_id", client.ID, "period", eligibility.Period.ID, "to", client.Email, "subject", subjectLine, "body_bytes", len(body))
 	entry := entities.SendLogEntry{
 		ClientID:      client.ID,
 		ForPeriod:     eligibility.Period,
@@ -258,7 +258,7 @@ func (s *ReminderService) sendReminder(client entities.Client, eligibility entit
 		Success:       true,
 	}
 
-	s.logger.Demo("sending reminder email", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex, "to", client.Email, "subject", subjectLine)
+	s.logger.DemoBelow("sending reminder email", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex, "to", client.Email, "subject", subjectLine)
 	if err := s.emailSender.SendEmail(client.Email, subjectLine, body); err != nil {
 		s.logger.Error("send reminder email", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex, "error", err)
 		entry.Success = false
@@ -271,7 +271,7 @@ func (s *ReminderService) sendReminder(client entities.Client, eligibility entit
 	}
 
 	result.Sent++
-	s.logger.Demo("recording successful reminder send", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex)
+	s.logger.DemoBelow("recording successful reminder send", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex)
 	if err := s.reminderSendRepo.RecordSuccessfulSend(client, entry); err != nil {
 		s.logger.Error("record successful reminder send", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex, "error", err)
 		result.Failures++
@@ -279,7 +279,7 @@ func (s *ReminderService) sendReminder(client entities.Client, eligibility entit
 	}
 
 	if verdict == entities.CompletionIncomplete {
-		s.logger.Demo("requesting new upload review verdict after incomplete-upload reminder", "client_id", client.ID, "period", eligibility.Period.ID)
+		s.logger.DemoBelow("requesting new upload review verdict after incomplete-upload reminder", "client_id", client.ID, "period", eligibility.Period.ID)
 		if _, err := s.completionDecider.RequestNewCompletionVerdict(client, eligibility.Period, ""); err != nil {
 			s.logger.Error("request new completion verdict", "client_id", client.ID, "period", eligibility.Period.ID, "error", err)
 			result.Failures++

@@ -1,0 +1,1062 @@
+{
+  "0530ee9a433c": {
+    "message": "rendered reminder email",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 251,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).sendReminder",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 228,
+    "clean_column": 2
+  },
+  "068c7b23e6d4": {
+    "message": "updated existing period resolution record",
+    "source_path": "internal/adapters/periodresolution/jsonfile/json_period_resolution_repository.go",
+    "source_line": 83,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/periodresolution/jsonfile.(*PeriodResolutionRepository).MarkDealtWith",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/periodresolution/jsonfile/json_period_resolution_repository.go",
+    "clean_line": 78,
+    "clean_column": 4
+  },
+  "0ab1c0f7b8a3": {
+    "message": "using cached holiday calendar",
+    "source_path": "internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "source_line": 134,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/holiday/canadaholidaysapi.(*HolidayChecker).holidaysForYear",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "clean_line": 131,
+    "clean_column": 9
+  },
+  "0e8378231877": {
+    "message": "sending admin missed-period alert",
+    "source_path": "internal/adapters/adminalert/email/email_admin_alerter.go",
+    "source_line": 38,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/adminalert/email.(*AdminAlerter).AlertMissedPeriod",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/adminalert/email/email_admin_alerter.go",
+    "clean_line": 38,
+    "clean_column": 2
+  },
+  "12fcd40c3992": {
+    "message": "updated Notion page trash status",
+    "source_path": "internal/adapters/notionapi/client.go",
+    "source_line": 432,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/notionapi.(*Client).UpdatePageInTrash",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/notionapi/client.go",
+    "clean_line": 418,
+    "clean_column": 2
+  },
+  "1436740b3928": {
+    "message": "sent SMTP email",
+    "source_path": "internal/adapters/email/smtp/smtp_email_sender.go",
+    "source_line": 58,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/email/smtp.(*EmailSender).SendEmail",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/email/smtp/smtp_email_sender.go",
+    "clean_line": 53,
+    "clean_column": 2
+  },
+  "14fd6871f418": {
+    "message": "evaluating client",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 110,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).Run",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 105,
+    "clean_column": 2
+  },
+  "168fad84b7c4": {
+    "message": "recording successful reminder send",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 274,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).sendReminder",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 250,
+    "clean_column": 2
+  },
+  "1b4d055b5969": {
+    "message": "period resolution state has no record for period",
+    "source_path": "internal/adapters/periodresolution/jsonfile/json_period_resolution_repository.go",
+    "source_line": 65,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/periodresolution/jsonfile.(*PeriodResolutionRepository).IsDealtWith",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/periodresolution/jsonfile/json_period_resolution_repository.go",
+    "clean_line": 58,
+    "clean_column": 2
+  },
+  "1d0d5d3b177b": {
+    "message": "using configured Notion upload review task data source",
+    "source_path": "internal/adapters/completion/notion/notion_completion_decider.go",
+    "source_line": 190,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/completion/notion.(*CompletionDecider).resolveDataSourceID",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/adapters/completion/notion/notion_completion_decider.go",
+    "clean_line": 180,
+    "clean_column": 2
+  },
+  "1d92906e9b61": {
+    "message": "loaded reminder send state file",
+    "source_path": "internal/adapters/remindersend/jsonfile/json_reminder_send_repository.go",
+    "source_line": 116,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/remindersend/jsonfile.(*ReminderSendRepository).load",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/remindersend/jsonfile/json_reminder_send_repository.go",
+    "clean_line": 106,
+    "clean_column": 2
+  },
+  "1da27ff81307": {
+    "message": "loaded previous successful sends for current period",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 134,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).Run",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 124,
+    "clean_column": 3
+  },
+  "242b97140291": {
+    "message": "previous period had no successful reminder sends",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 204,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).alertMissedPreviousPeriod",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 184,
+    "clean_column": 2
+  },
+  "24ef8cb699b9": {
+    "message": "Notion returned upload review task pages",
+    "source_path": "internal/adapters/completion/notion/notion_completion_decider.go",
+    "source_line": 175,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/completion/notion.(*CompletionDecider).ensureLoaded",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/completion/notion/notion_completion_decider.go",
+    "clean_line": 165,
+    "clean_column": 2
+  },
+  "266cf0938705": {
+    "message": "found Notion data source",
+    "source_path": "internal/adapters/notionapi/client.go",
+    "source_line": 321,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/notionapi.(*Client).FindDataSourceIDByTitle",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/adapters/notionapi/client.go",
+    "clean_line": 319,
+    "clean_column": 4
+  },
+  "272c520c2ace": {
+    "message": "retrieving Notion page",
+    "source_path": "internal/adapters/notionapi/client.go",
+    "source_line": 376,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/notionapi.(*Client).RetrievePage",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/notionapi/client.go",
+    "clean_line": 372,
+    "clean_column": 2
+  },
+  "286964e0698d": {
+    "message": "previous period could not be determined",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 178,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).alertMissedPreviousPeriod",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 164,
+    "clean_column": 2
+  },
+  "2a3eb0c3d1cf": {
+    "message": "stored holiday calendar in cache",
+    "source_path": "internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "source_line": 259,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/holiday/canadaholidaysapi.(*HolidayChecker).storeCache",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "clean_line": 246,
+    "clean_column": 2
+  },
+  "2cb4e3aabbf5": {
+    "message": "requesting new upload review verdict after incomplete-upload reminder",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 282,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).sendReminder",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 257,
+    "clean_column": 3
+  },
+  "2e0a6161647e": {
+    "message": "Notion API call succeeded",
+    "source_path": "internal/adapters/notionapi/client.go",
+    "source_line": 501,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/notionapi.(*Client).doJSON",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/notionapi/client.go",
+    "clean_line": 484,
+    "clean_column": 3
+  },
+  "2ea7fad94967": {
+    "message": "waiting before Notion API call to respect rate limit",
+    "source_path": "internal/adapters/notionapi/client.go",
+    "source_line": 526,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/notionapi.(*Client).waitForRateLimit",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/notionapi/client.go",
+    "clean_line": 511,
+    "clean_column": 2
+  },
+  "302aaddf27cd": {
+    "message": "fetching holiday calendar",
+    "source_path": "internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "source_line": 138,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/holiday/canadaholidaysapi.(*HolidayChecker).holidaysForYear",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "clean_line": 135,
+    "clean_column": 2
+  },
+  "3baef88a602a": {
+    "message": "skipping reminder because upload review is undecided",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 163,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).Run",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 148,
+    "clean_column": 3
+  },
+  "3c2c26b95544": {
+    "message": "using cached Notion upload review task snapshot",
+    "source_path": "internal/adapters/completion/notion/notion_completion_decider.go",
+    "source_line": 159,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/completion/notion.(*CompletionDecider).ensureLoaded",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/adapters/completion/notion/notion_completion_decider.go",
+    "clean_line": 153,
+    "clean_column": 2
+  },
+  "3e8157d3eead": {
+    "message": "created period resolution record",
+    "source_path": "internal/adapters/periodresolution/jsonfile/json_period_resolution_repository.go",
+    "source_line": 94,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/periodresolution/jsonfile.(*PeriodResolutionRepository).MarkDealtWith",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/periodresolution/jsonfile/json_period_resolution_repository.go",
+    "clean_line": 83,
+    "clean_column": 2
+  },
+  "3ee3f9bb1f2f": {
+    "message": "querying active clients from Notion",
+    "source_path": "internal/adapters/client/notion/notion_client_repository.go",
+    "source_line": 84,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/client/notion.(*ClientRepository).GetAllClients",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/client/notion/notion_client_repository.go",
+    "clean_line": 84,
+    "clean_column": 2
+  },
+  "3fbed2afd126": {
+    "message": "recording successful reminder send in JSON state",
+    "source_path": "internal/adapters/remindersend/jsonfile/json_reminder_send_repository.go",
+    "source_line": 72,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/remindersend/jsonfile.(*ReminderSendRepository).RecordSuccessfulSend",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/remindersend/jsonfile/json_reminder_send_repository.go",
+    "clean_line": 70,
+    "clean_column": 2
+  },
+  "41c9906a304a": {
+    "message": "recording failed reminder send in JSON state",
+    "source_path": "internal/adapters/remindersend/jsonfile/json_reminder_send_repository.go",
+    "source_line": 79,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/remindersend/jsonfile.(*ReminderSendRepository).RecordFailedSend",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/remindersend/jsonfile/json_reminder_send_repository.go",
+    "clean_line": 76,
+    "clean_column": 2
+  },
+  "41d31363129e": {
+    "message": "updated Notion select property",
+    "source_path": "internal/adapters/notionapi/client.go",
+    "source_line": 417,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/notionapi.(*Client).UpdatePageSelect",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/notionapi/client.go",
+    "clean_line": 405,
+    "clean_column": 2
+  },
+  "453997df60b8": {
+    "message": "client is eligible for a reminder",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 146,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).Run",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 136,
+    "clean_column": 3
+  },
+  "48a1376a9d28": {
+    "message": "loaded previous upload snapshot",
+    "source_path": "internal/adapters/uploadsnapshot/localfs/localfs_upload_snapshotter.go",
+    "source_line": 178,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/uploadsnapshot/localfs.(*UploadSnapshotter).readSnapshot",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/uploadsnapshot/localfs/localfs_upload_snapshotter.go",
+    "clean_line": 173,
+    "clean_column": 2
+  },
+  "4942ec9bbfa9": {
+    "message": "checking whether previous period was missed",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 181,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).alertMissedPreviousPeriod",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 168,
+    "clean_column": 2
+  },
+  "4b544b8f647d": {
+    "message": "created new Notion upload review task",
+    "source_path": "internal/adapters/completion/notion/notion_completion_decider.go",
+    "source_line": 153,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/completion/notion.(*CompletionDecider).RequestNewCompletionVerdict",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/completion/notion/notion_completion_decider.go",
+    "clean_line": 148,
+    "clean_column": 2
+  },
+  "53de0b4eb1ab": {
+    "message": "resolved Notion client data source",
+    "source_path": "internal/adapters/client/notion/notion_client_repository.go",
+    "source_line": 126,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/client/notion.(*ClientRepository).resolveDataSourceID",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/client/notion/notion_client_repository.go",
+    "clean_line": 120,
+    "clean_column": 2
+  },
+  "543a9dc1a3d5": {
+    "message": "sending SMTP email",
+    "source_path": "internal/adapters/email/smtp/smtp_email_sender.go",
+    "source_line": 43,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/email/smtp.(*EmailSender).SendEmail",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/email/smtp/smtp_email_sender.go",
+    "clean_line": 43,
+    "clean_column": 2
+  },
+  "57893acf494a": {
+    "message": "loaded email body template from environment",
+    "source_path": "internal/adapters/config/env/env_global_configuration.go",
+    "source_line": 58,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/config/env.(*GlobalConfiguration).GetEmailBodyTemplate",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/config/env/env_global_configuration.go",
+    "clean_line": 50,
+    "clean_column": 2
+  },
+  "58f4f1d6663b": {
+    "message": "reminder send state file is empty",
+    "source_path": "internal/adapters/remindersend/jsonfile/json_reminder_send_repository.go",
+    "source_line": 108,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/remindersend/jsonfile.(*ReminderSendRepository).load",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/adapters/remindersend/jsonfile/json_reminder_send_repository.go",
+    "clean_line": 101,
+    "clean_column": 2
+  },
+  "6042ae9b1b95": {
+    "message": "loading reminder email template",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 241,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).sendReminder",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 220,
+    "clean_column": 2
+  },
+  "61284be13a6e": {
+    "message": "using default email subject template",
+    "source_path": "internal/adapters/config/env/env_global_configuration.go",
+    "source_line": 39,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/config/env.(*GlobalConfiguration).GetEmailBodyTemplate",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/adapters/config/env/env_global_configuration.go",
+    "clean_line": 36,
+    "clean_column": 2
+  },
+  "64ad55132bd8": {
+    "message": "requesting upload review verdict for changed files",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 115,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).Run",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 111,
+    "clean_column": 4
+  },
+  "65b31dd2f17a": {
+    "message": "loaded period resolution state file",
+    "source_path": "internal/adapters/periodresolution/jsonfile/json_period_resolution_repository.go",
+    "source_line": 117,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/periodresolution/jsonfile.(*PeriodResolutionRepository).load",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/periodresolution/jsonfile/json_period_resolution_repository.go",
+    "clean_line": 106,
+    "clean_column": 2
+  },
+  "673f579fdd15": {
+    "message": "checking period resolution state",
+    "source_path": "internal/adapters/periodresolution/jsonfile/json_period_resolution_repository.go",
+    "source_line": 53,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/periodresolution/jsonfile.(*PeriodResolutionRepository).IsDealtWith",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/periodresolution/jsonfile/json_period_resolution_repository.go",
+    "clean_line": 53,
+    "clean_column": 2
+  },
+  "70b5cd93b97e": {
+    "message": "loading reminder send history",
+    "source_path": "internal/adapters/remindersend/jsonfile/json_reminder_send_repository.go",
+    "source_line": 46,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/remindersend/jsonfile.(*ReminderSendRepository).ListSuccessfulSends",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/remindersend/jsonfile/json_reminder_send_repository.go",
+    "clean_line": 46,
+    "clean_column": 2
+  },
+  "72e9f126e0ef": {
+    "message": "querying Notion data source",
+    "source_path": "internal/adapters/notionapi/client.go",
+    "source_line": 335,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/notionapi.(*Client).QueryDataSource",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/notionapi/client.go",
+    "clean_line": 333,
+    "clean_column": 2
+  },
+  "751d2471a77e": {
+    "message": "alerting admin about missed previous period",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 225,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).alertMissedPreviousPeriod",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 205,
+    "clean_column": 2
+  },
+  "752dc7303ab3": {
+    "message": "stored upload snapshot",
+    "source_path": "internal/adapters/uploadsnapshot/localfs/localfs_upload_snapshotter.go",
+    "source_line": 196,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/uploadsnapshot/localfs.(*UploadSnapshotter).storeSnapshot",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/uploadsnapshot/localfs/localfs_upload_snapshotter.go",
+    "clean_line": 191,
+    "clean_column": 2
+  },
+  "7df161e33cfb": {
+    "message": "creating new Notion upload review task",
+    "source_path": "internal/adapters/completion/notion/notion_completion_decider.go",
+    "source_line": 131,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/completion/notion.(*CompletionDecider).RequestNewCompletionVerdict",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/completion/notion/notion_completion_decider.go",
+    "clean_line": 128,
+    "clean_column": 2
+  },
+  "85554637bf7c": {
+    "message": "loading email template configuration",
+    "source_path": "internal/adapters/config/env/env_global_configuration.go",
+    "source_line": 34,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/config/env.(*GlobalConfiguration).GetEmailBodyTemplate",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/config/env/env_global_configuration.go",
+    "clean_line": 35,
+    "clean_column": 2
+  },
+  "8bda74a0bf48": {
+    "message": "holiday cache miss",
+    "source_path": "internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "source_line": 206,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/holiday/canadaholidaysapi.(*HolidayChecker).loadCache",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "clean_line": 199,
+    "clean_column": 3
+  },
+  "8c3f797e8c15": {
+    "message": "loaded active clients",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 99,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).Run",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 95,
+    "clean_column": 2
+  },
+  "8faee3016ea1": {
+    "message": "Notion API asked client to slow down",
+    "source_path": "internal/adapters/notionapi/client.go",
+    "source_line": 482,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/notionapi.(*Client).doJSON",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/adapters/notionapi/client.go",
+    "clean_line": 467,
+    "clean_column": 3
+  },
+  "92ce3ba4c8ef": {
+    "message": "period resolution state says period is already dealt with",
+    "source_path": "internal/adapters/periodresolution/jsonfile/json_period_resolution_repository.go",
+    "source_line": 61,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/periodresolution/jsonfile.(*PeriodResolutionRepository).IsDealtWith",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/adapters/periodresolution/jsonfile/json_period_resolution_repository.go",
+    "clean_line": 59,
+    "clean_column": 3
+  },
+  "9597a8d7f758": {
+    "message": "wrote period resolution state file",
+    "source_path": "internal/adapters/periodresolution/jsonfile/json_period_resolution_repository.go",
+    "source_line": 134,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/periodresolution/jsonfile.(*PeriodResolutionRepository).store",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/periodresolution/jsonfile/json_period_resolution_repository.go",
+    "clean_line": 122,
+    "clean_column": 2
+  },
+  "96cb9b12571a": {
+    "message": "mapped Notion client page",
+    "source_path": "internal/adapters/client/notion/notion_client_repository.go",
+    "source_line": 105,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/client/notion.(*ClientRepository).GetAllClients",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/client/notion/notion_client_repository.go",
+    "clean_line": 100,
+    "clean_column": 3
+  },
+  "9827e5e4196d": {
+    "message": "updating Notion select property",
+    "source_path": "internal/adapters/notionapi/client.go",
+    "source_line": 411,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/notionapi.(*Client).UpdatePageSelect",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/notionapi/client.go",
+    "clean_line": 403,
+    "clean_column": 2
+  },
+  "988c43686ddd": {
+    "message": "cached upload review task snapshot for this run",
+    "source_path": "internal/adapters/completion/notion/notion_completion_decider.go",
+    "source_line": 184,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/completion/notion.(*CompletionDecider).ensureLoaded",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/completion/notion/notion_completion_decider.go",
+    "clean_line": 175,
+    "clean_column": 2
+  },
+  "a3b8fc2dfba4": {
+    "message": "loaded upload review verdict",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 155,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).Run",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 146,
+    "clean_column": 3
+  },
+  "a7b587eb361f": {
+    "message": "resolved Notion upload review task data source",
+    "source_path": "internal/adapters/completion/notion/notion_completion_decider.go",
+    "source_line": 202,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/completion/notion.(*CompletionDecider).resolveDataSourceID",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/completion/notion/notion_completion_decider.go",
+    "clean_line": 190,
+    "clean_column": 2
+  },
+  "a8f7924cc35a": {
+    "message": "retrieved Notion page",
+    "source_path": "internal/adapters/notionapi/client.go",
+    "source_line": 382,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/notionapi.(*Client).RetrievePage",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/notionapi/client.go",
+    "clean_line": 374,
+    "clean_column": 2
+  },
+  "aa505253bca7": {
+    "message": "checking business-day holiday calendar",
+    "source_path": "internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "source_line": 115,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/holiday/canadaholidaysapi.(*HolidayChecker).IsHoliday",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "clean_line": 116,
+    "clean_column": 2
+  },
+  "b06b2630f9a4": {
+    "message": "created Notion page",
+    "source_path": "internal/adapters/notionapi/client.go",
+    "source_line": 400,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/notionapi.(*Client).CreatePage",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/notionapi/client.go",
+    "clean_line": 390,
+    "clean_column": 2
+  },
+  "b2b77d2b5662": {
+    "message": "client is not eligible for a reminder today",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 143,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).Run",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 136,
+    "clean_column": 3
+  },
+  "b428e9285815": {
+    "message": "loading email body template from file",
+    "source_path": "internal/adapters/config/env/env_global_configuration.go",
+    "source_line": 45,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/config/env.(*GlobalConfiguration).GetEmailBodyTemplate",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/config/env/env_global_configuration.go",
+    "clean_line": 42,
+    "clean_column": 3
+  },
+  "b4a3b367de9c": {
+    "message": "updating Notion page trash status",
+    "source_path": "internal/adapters/notionapi/client.go",
+    "source_line": 426,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/notionapi.(*Client).UpdatePageInTrash",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/notionapi/client.go",
+    "clean_line": 416,
+    "clean_column": 2
+  },
+  "b4cf8d513efa": {
+    "message": "holiday cache expired",
+    "source_path": "internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "source_line": 218,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/holiday/canadaholidaysapi.(*HolidayChecker).loadCache",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "clean_line": 210,
+    "clean_column": 2
+  },
+  "b4deab554831": {
+    "message": "mapped Notion upload review task page",
+    "source_path": "internal/adapters/completion/notion/notion_completion_decider.go",
+    "source_line": 232,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/completion/notion.(*CompletionDecider).recordsFromPages",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/completion/notion/notion_completion_decider.go",
+    "clean_line": 219,
+    "clean_column": 3
+  },
+  "b749a0eb9e9d": {
+    "message": "using email subject template from environment",
+    "source_path": "internal/adapters/config/env/env_global_configuration.go",
+    "source_line": 41,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/config/env.(*GlobalConfiguration).GetEmailBodyTemplate",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/adapters/config/env/env_global_configuration.go",
+    "clean_line": 38,
+    "clean_column": 9
+  },
+  "b85194935567": {
+    "message": "previous period had successful reminder sends",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 201,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).alertMissedPreviousPeriod",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 184,
+    "clean_column": 2
+  },
+  "bde89078f08a": {
+    "message": "using injected demo clock",
+    "source_path": "internal/bootstrap/wire-demo.go",
+    "source_line": 65,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/bootstrap.BuildServiceForDemo",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/bootstrap/wire-demo.go",
+    "clean_line": 61,
+    "clean_column": 2
+  },
+  "c5c256492686": {
+    "message": "created upload snapshot",
+    "source_path": "internal/adapters/uploadsnapshot/localfs/localfs_upload_snapshotter.go",
+    "source_line": 146,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/uploadsnapshot/localfs.(*UploadSnapshotter).currentSnapshot",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/uploadsnapshot/localfs/localfs_upload_snapshotter.go",
+    "clean_line": 142,
+    "clean_column": 2
+  },
+  "c64a064c8a2c": {
+    "message": "holiday cache disabled; not storing calendar",
+    "source_path": "internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "source_line": 233,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/holiday/canadaholidaysapi.(*HolidayChecker).storeCache",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "clean_line": 223,
+    "clean_column": 2
+  },
+  "c7dadf17244e": {
+    "message": "using configured Notion client data source",
+    "source_path": "internal/adapters/client/notion/notion_client_repository.go",
+    "source_line": 114,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/client/notion.(*ClientRepository).resolveDataSourceID",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/adapters/client/notion/notion_client_repository.go",
+    "clean_line": 110,
+    "clean_column": 2
+  },
+  "c99e1c4da0e5": {
+    "message": "creating Notion page",
+    "source_path": "internal/adapters/notionapi/client.go",
+    "source_line": 395,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/notionapi.(*Client).CreatePage",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/notionapi/client.go",
+    "clean_line": 389,
+    "clean_column": 2
+  },
+  "ca430b01308c": {
+    "message": "building demo reminder service",
+    "source_path": "internal/bootstrap/wire-demo.go",
+    "source_line": 50,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/bootstrap.BuildServiceForDemo",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/bootstrap/wire-demo.go",
+    "clean_line": 50,
+    "clean_column": 2
+  },
+  "cd5577b77b48": {
+    "message": "starting reminder run",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 93,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).Run",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 94,
+    "clean_column": 2
+  },
+  "d004a5d72350": {
+    "message": "reminder send state file does not exist yet",
+    "source_path": "internal/adapters/remindersend/jsonfile/json_reminder_send_repository.go",
+    "source_line": 101,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/remindersend/jsonfile.(*ReminderSendRepository).load",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/adapters/remindersend/jsonfile/json_reminder_send_repository.go",
+    "clean_line": 95,
+    "clean_column": 3
+  },
+  "d047cdb7f01f": {
+    "message": "appended reminder send record",
+    "source_path": "internal/adapters/remindersend/jsonfile/json_reminder_send_repository.go",
+    "source_line": 93,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/remindersend/jsonfile.(*ReminderSendRepository).append",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/remindersend/jsonfile/json_reminder_send_repository.go",
+    "clean_line": 88,
+    "clean_column": 2
+  },
+  "d6bc84a278b2": {
+    "message": "period resolution state file is empty",
+    "source_path": "internal/adapters/periodresolution/jsonfile/json_period_resolution_repository.go",
+    "source_line": 109,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/periodresolution/jsonfile.(*PeriodResolutionRepository).load",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/adapters/periodresolution/jsonfile/json_period_resolution_repository.go",
+    "clean_line": 101,
+    "clean_column": 2
+  },
+  "da6ed52d269b": {
+    "message": "skipping reminder because upload is marked complete",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 159,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).Run",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 148,
+    "clean_column": 3
+  },
+  "dd15be1ab1fa": {
+    "message": "loaded email body template from file",
+    "source_path": "internal/adapters/config/env/env_global_configuration.go",
+    "source_line": 50,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/config/env.(*GlobalConfiguration).GetEmailBodyTemplate",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/config/env/env_global_configuration.go",
+    "clean_line": 43,
+    "clean_column": 3
+  },
+  "df0765891039": {
+    "message": "Notion returned active client pages",
+    "source_path": "internal/adapters/client/notion/notion_client_repository.go",
+    "source_line": 97,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/client/notion.(*ClientRepository).GetAllClients",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/client/notion/notion_client_repository.go",
+    "clean_line": 93,
+    "clean_column": 2
+  },
+  "e2b174cc225d": {
+    "message": "finished Notion data source query",
+    "source_path": "internal/adapters/notionapi/client.go",
+    "source_line": 363,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/notionapi.(*Client).QueryDataSource",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/adapters/notionapi/client.go",
+    "clean_line": 359,
+    "clean_column": 3
+  },
+  "e45e6290d119": {
+    "message": "sending reminder email",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 261,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).sendReminder",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 238,
+    "clean_column": 2
+  },
+  "e47f1999d98a": {
+    "message": "checked business-day holiday calendar",
+    "source_path": "internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "source_line": 123,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/holiday/canadaholidaysapi.(*HolidayChecker).IsHoliday",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "clean_line": 121,
+    "clean_column": 2
+  },
+  "e560f838af6a": {
+    "message": "wrote reminder send state file",
+    "source_path": "internal/adapters/remindersend/jsonfile/json_reminder_send_repository.go",
+    "source_line": 133,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/remindersend/jsonfile.(*ReminderSendRepository).store",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/remindersend/jsonfile/json_reminder_send_repository.go",
+    "clean_line": 122,
+    "clean_column": 2
+  },
+  "e6ff63cfa8f6": {
+    "message": "calling Notion API",
+    "source_path": "internal/adapters/notionapi/client.go",
+    "source_line": 473,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/notionapi.(*Client).doJSON",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/notionapi/client.go",
+    "clean_line": 461,
+    "clean_column": 3
+  },
+  "e811f1ab0cec": {
+    "message": "matched Notion upload review task",
+    "source_path": "internal/adapters/completion/notion/notion_completion_decider.go",
+    "source_line": 105,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/completion/notion.(*CompletionDecider).GetVerdict",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/completion/notion/notion_completion_decider.go",
+    "clean_line": 103,
+    "clean_column": 2
+  },
+  "e9496b2b08f0": {
+    "message": "trashing existing Notion upload review task",
+    "source_path": "internal/adapters/completion/notion/notion_completion_decider.go",
+    "source_line": 120,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/completion/notion.(*CompletionDecider).RequestNewCompletionVerdict",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/completion/notion/notion_completion_decider.go",
+    "clean_line": 118,
+    "clean_column": 3
+  },
+  "ea5b89ea8c17": {
+    "message": "sending reminder because upload is not complete",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 166,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).Run",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 148,
+    "clean_column": 3
+  },
+  "ea6e38ec2f10": {
+    "message": "searching Notion data sources",
+    "source_path": "internal/adapters/notionapi/client.go",
+    "source_line": 300,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/notionapi.(*Client).FindDataSourceIDByTitle",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/notionapi/client.go",
+    "clean_line": 300,
+    "clean_column": 2
+  },
+  "ea8059d98f19": {
+    "message": "holiday API responded",
+    "source_path": "internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "source_line": 173,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/holiday/canadaholidaysapi.(*HolidayChecker).fetchProvinceHolidays",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "clean_line": 167,
+    "clean_column": 2
+  },
+  "ebf6bc2229b2": {
+    "message": "holiday cache hit",
+    "source_path": "internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "source_line": 227,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/holiday/canadaholidaysapi.(*HolidayChecker).loadCache",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "clean_line": 215,
+    "clean_column": 2
+  },
+  "ecaf7ec477e1": {
+    "message": "sent admin missed-period alert",
+    "source_path": "internal/adapters/adminalert/email/email_admin_alerter.go",
+    "source_line": 49,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/adminalert/email.(*AdminAlerter).AlertMissedPeriod",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/adminalert/email/email_admin_alerter.go",
+    "clean_line": 45,
+    "clean_column": 2
+  },
+  "ecbff74f3efc": {
+    "message": "previous period already resolved",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 190,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).alertMissedPreviousPeriod",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 174,
+    "clean_column": 2
+  },
+  "eeff45568638": {
+    "message": "no Notion upload review task found",
+    "source_path": "internal/adapters/completion/notion/notion_completion_decider.go",
+    "source_line": 97,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/completion/notion.(*CompletionDecider).GetVerdict",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/adapters/completion/notion/notion_completion_decider.go",
+    "clean_line": 96,
+    "clean_column": 2
+  },
+  "f311467f11aa": {
+    "message": "loaded previous-period upload review verdict",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 213,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).alertMissedPreviousPeriod",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 194,
+    "clean_column": 2
+  },
+  "f35ccba51629": {
+    "message": "querying upload review tasks from Notion",
+    "source_path": "internal/adapters/completion/notion/notion_completion_decider.go",
+    "source_line": 168,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/completion/notion.(*CompletionDecider).ensureLoaded",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/completion/notion/notion_completion_decider.go",
+    "clean_line": 162,
+    "clean_column": 2
+  },
+  "f621506ecc2e": {
+    "message": "resolving Notion client data source by title",
+    "source_path": "internal/adapters/client/notion/notion_client_repository.go",
+    "source_line": 120,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/client/notion.(*ClientRepository).resolveDataSourceID",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/client/notion/notion_client_repository.go",
+    "clean_line": 116,
+    "clean_column": 2
+  },
+  "f66998947572": {
+    "message": "period resolution state file does not exist yet",
+    "source_path": "internal/adapters/periodresolution/jsonfile/json_period_resolution_repository.go",
+    "source_line": 102,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/periodresolution/jsonfile.(*PeriodResolutionRepository).load",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/adapters/periodresolution/jsonfile/json_period_resolution_repository.go",
+    "clean_line": 95,
+    "clean_column": 3
+  },
+  "f7cd373702f0": {
+    "message": "resolving Notion upload review task data source by title",
+    "source_path": "internal/adapters/completion/notion/notion_completion_decider.go",
+    "source_line": 196,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/completion/notion.(*CompletionDecider).resolveDataSourceID",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/completion/notion/notion_completion_decider.go",
+    "clean_line": 186,
+    "clean_column": 2
+  },
+  "f82962787149": {
+    "message": "marking previous period resolved because upload is complete",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 216,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).alertMissedPreviousPeriod",
+    "target_mode": "surrounding",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 195,
+    "clean_column": 2
+  },
+  "f8a0b862b78b": {
+    "message": "marking period as dealt with",
+    "source_path": "internal/adapters/periodresolution/jsonfile/json_period_resolution_repository.go",
+    "source_line": 73,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/periodresolution/jsonfile.(*PeriodResolutionRepository).MarkDealtWith",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/periodresolution/jsonfile/json_period_resolution_repository.go",
+    "clean_line": 70,
+    "clean_column": 2
+  },
+  "f96ecf5abe1a": {
+    "message": "loaded fresh holiday calendar",
+    "source_path": "internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "source_line": 148,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/holiday/canadaholidaysapi.(*HolidayChecker).holidaysForYear",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/holiday/canadaholidaysapi/canada_holidays_holiday_checker.go",
+    "clean_line": 140,
+    "clean_column": 2
+  },
+  "fbc657671b5c": {
+    "message": "loaded upload snapshots",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 106,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).Run",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 101,
+    "clean_column": 2
+  },
+  "fc3786bd61a3": {
+    "message": "loaded successful reminder send history",
+    "source_path": "internal/adapters/remindersend/jsonfile/json_reminder_send_repository.go",
+    "source_line": 65,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/remindersend/jsonfile.(*ReminderSendRepository).ListSuccessfulSends",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/remindersend/jsonfile/json_reminder_send_repository.go",
+    "clean_line": 57,
+    "clean_column": 2
+  },
+  "fcc4d5eefee4": {
+    "message": "finished reminder run",
+    "source_path": "internal/core/service/reminder_service.go",
+    "source_line": 171,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/core/service.(*ReminderService).Run",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/core/service/reminder_service.go",
+    "clean_line": 105,
+    "clean_column": 2
+  }
+}

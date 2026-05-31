@@ -1,0 +1,130 @@
+package bootstrap
+
+import (
+	"fmt"
+	"os"
+	"strings"
+
+	adminalertemail "github.com/strengthinnumbers-business/client-reminder/internal/adapters/adminalert/email"
+	clientjson "github.com/strengthinnumbers-business/client-reminder/internal/adapters/client/jsonfile"
+	completionjson "github.com/strengthinnumbers-business/client-reminder/internal/adapters/completion/jsonfile"
+	configenv "github.com/strengthinnumbers-business/client-reminder/internal/adapters/config/env"
+	emailsmtp "github.com/strengthinnumbers-business/client-reminder/internal/adapters/email/smtp"
+	holidaycanada "github.com/strengthinnumbers-business/client-reminder/internal/adapters/holiday/canadaholidaysapi"
+	"github.com/strengthinnumbers-business/client-reminder/internal/adapters/logging/fanout"
+	lokiadapter "github.com/strengthinnumbers-business/client-reminder/internal/adapters/logging/loki"
+	slogadapter "github.com/strengthinnumbers-business/client-reminder/internal/adapters/logging/slog"
+	periodresolutionjson "github.com/strengthinnumbers-business/client-reminder/internal/adapters/periodresolution/jsonfile"
+	remindersendjson "github.com/strengthinnumbers-business/client-reminder/internal/adapters/remindersend/jsonfile"
+	uploadsnapshotlocalfs "github.com/strengthinnumbers-business/client-reminder/internal/adapters/uploadsnapshot/localfs"
+	"github.com/strengthinnumbers-business/client-reminder/internal/core/ports"
+	"github.com/strengthinnumbers-business/client-reminder/internal/core/service"
+)
+
+func BuildServiceFromEnv() (*service.ReminderService, error) {
+	clientsPath := envOrDefault("CLIENTS_JSON_PATH", "configs/clients.json")
+	templatePath := os.Getenv("EMAIL_TEMPLATE_PATH")
+	completionStatePath := envOrDefault("COMPLETION_STATE_PATH", "state/completion-verdicts.json")
+	reminderSendStatePath := envOrDefault("REMINDER_SEND_STATE_PATH", "state/reminder-sends.json")
+	periodResolutionStatePath := envOrDefault("PERIOD_RESOLUTION_STATE_PATH", "state/period-resolutions.json")
+	holidayCacheDir := envOrDefault("HOLIDAY_CACHE_DIR", "state/holiday-cache")
+	uploadDir := envOrDefault("UPLOAD_DIR", "state/upload-mirror")
+	uploadSnapshotDir := envOrDefault("UPLOAD_SNAPSHOT_DIR", "state/upload-snapshots")
+
+	smtpHost := os.Getenv("SMTP_HOST")
+	smtpPort := envOrDefault("SMTP_PORT", "25")
+	smtpUsername := os.Getenv("SMTP_USERNAME")
+	smtpPassword := os.Getenv("SMTP_PASSWORD")
+	smtpFrom := os.Getenv("SMTP_FROM")
+	adminEmail := os.Getenv("ADMIN_EMAIL")
+
+	if smtpHost == "" {
+		return nil, fmt.Errorf("SMTP_HOST is required")
+	}
+	if smtpFrom == "" {
+		return nil, fmt.Errorf("SMTP_FROM is required")
+	}
+	if adminEmail == "" {
+		return nil, fmt.Errorf("ADMIN_EMAIL is required")
+	}
+
+	logger := loggerFromEnv()
+	emailSender := emailsmtp.New(smtpHost, smtpPort, smtpUsername, smtpPassword, smtpFrom, emailsmtp.WithLogger(logger))
+	clientRepo := clientjson.New(clientsPath, clientjson.WithLogger(logger))
+	config := configenv.New(templatePath, configenv.WithLogger(logger))
+	completionDecider := completionjson.New(completionStatePath, completionjson.WithLogger(logger))
+	holidayChecker := holidaycanada.New(holidayCacheDir, holidaycanada.WithLogger(logger))
+	reminderSendRepo := remindersendjson.New(reminderSendStatePath, remindersendjson.WithLogger(logger))
+	periodResolutionRepo := periodresolutionjson.New(periodResolutionStatePath, periodresolutionjson.WithLogger(logger))
+	adminAlerter := adminalertemail.New(emailSender, adminEmail, adminalertemail.WithLogger(logger))
+	uploadSnapshotter := uploadsnapshotlocalfs.New(uploadDir, uploadSnapshotDir, uploadsnapshotlocalfs.WithLogger(logger))
+
+	return service.NewReminderService(
+		emailSender,
+		clientRepo,
+		config,
+		completionDecider,
+		holidayChecker,
+		reminderSendRepo,
+		periodResolutionRepo,
+		adminAlerter,
+		nil,
+		service.WithLogger(logger),
+		service.WithUploadSnapshotter(uploadSnapshotter),
+	), nil
+}
+
+func envOrDefault(key, fallback string) string {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback
+	}
+	return v
+}
+
+func loggerFromEnv() ports.Logger {
+	level := logLevelFromEnv()
+	stderrLogger := slogadapter.NewText(os.Stderr, level)
+	lokiURL := os.Getenv("LOKI_URL")
+	if lokiURL == "" {
+		return stderrLogger
+	}
+
+	lokiLogger := lokiadapter.New(lokiURL, lokiadapter.Level(level), lokiadapter.WithLabels(lokiLabelsFromEnv()))
+	return fanout.New(stderrLogger, lokiLogger)
+}
+
+func logLevelFromEnv() slogadapter.Level {
+	switch strings.ToLower(os.Getenv("LOG_LEVEL")) {
+	case "demo":
+		return slogadapter.LevelDemo
+	case "debug":
+		return slogadapter.LevelDebug
+	case "error":
+		return slogadapter.LevelError
+	case "info", "":
+		return slogadapter.LevelInfo
+	default:
+		return slogadapter.LevelInfo
+	}
+}
+
+func lokiLabelsFromEnv() map[string]string {
+	labels := make(map[string]string)
+	raw := os.Getenv("LOKI_LABELS")
+	if raw == "" {
+		return labels
+	}
+	for _, part := range strings.Split(raw, ",") {
+		key, value, ok := strings.Cut(part, "=")
+		if !ok {
+			continue
+		}
+		key = strings.TrimSpace(key)
+		value = strings.TrimSpace(value)
+		if key != "" && value != "" {
+			labels[key] = value
+		}
+	}
+	return labels
+}

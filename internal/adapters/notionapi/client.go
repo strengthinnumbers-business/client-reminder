@@ -297,7 +297,7 @@ func WithLogger(logger ports.Logger) Option {
 
 func (c *Client) FindDataSourceIDByTitle(ctx context.Context, title string) (string, error) {
 	var cursor string
-	c.logger.Demo("searching Notion data sources", "title", title)
+	c.logger.DemoBelow("searching Notion data sources", "title", title)
 	for {
 		body := map[string]any{
 			"query":     title,
@@ -318,7 +318,7 @@ func (c *Client) FindDataSourceIDByTitle(ctx context.Context, title string) (str
 
 		for _, result := range payload.Results {
 			if result.Object == "data_source" && plainText(result.Title) == title {
-				c.logger.Demo("found Notion data source", "title", title, "data_source_id", result.ID)
+				c.logger.DemoSurrounding("found Notion data source", "title", title, "data_source_id", result.ID)
 				return result.ID, nil
 			}
 		}
@@ -332,7 +332,7 @@ func (c *Client) FindDataSourceIDByTitle(ctx context.Context, title string) (str
 func (c *Client) QueryDataSource(ctx context.Context, dataSourceID string, query QueryDataSourceRequest) ([]Page, error) {
 	var pages []Page
 	var cursor string
-	c.logger.Demo("querying Notion data source", "data_source_id", dataSourceID, "page_size", effectivePageSize(query.PageSize), "filtered_properties", query.FilterProperties)
+	c.logger.DemoBelow("querying Notion data source", "data_source_id", dataSourceID, "page_size", effectivePageSize(query.PageSize), "filtered_properties", query.FilterProperties)
 	for {
 		body := map[string]any{
 			"page_size": effectivePageSize(query.PageSize),
@@ -360,7 +360,7 @@ func (c *Client) QueryDataSource(ctx context.Context, dataSourceID string, query
 
 		pages = append(pages, payload.Results...)
 		if !payload.HasMore {
-			c.logger.Demo("finished Notion data source query", "data_source_id", dataSourceID, "pages", len(pages))
+			c.logger.DemoSurrounding("finished Notion data source query", "data_source_id", dataSourceID, "pages", len(pages))
 			return pages, nil
 		}
 		cursor = payload.NextCursor
@@ -373,13 +373,13 @@ func (c *Client) RetrievePage(ctx context.Context, pageID string, request Retrie
 		queryParams.Add("filter_properties[]", property)
 	}
 
-	c.logger.Demo("retrieving Notion page", "page_id", pageID, "filtered_properties", request.FilterProperties)
+	c.logger.DemoBelow("retrieving Notion page", "page_id", pageID, "filtered_properties", request.FilterProperties)
 	var page Page
 	path := fmt.Sprintf("/pages/%s", url.PathEscape(pageID))
 	if err := c.doJSON(ctx, http.MethodGet, path, queryParams, nil, &page); err != nil {
 		return Page{}, fmt.Errorf("retrieve Notion page %s: %w", pageID, err)
 	}
-	c.logger.Demo("retrieved Notion page", "page_id", pageID)
+	c.logger.DemoAbove("retrieved Notion page", "page_id", pageID)
 	return page, nil
 }
 
@@ -392,12 +392,12 @@ func (c *Client) CreatePage(ctx context.Context, request CreatePageRequest) (Pag
 		"properties": request.Properties,
 	}
 
-	c.logger.Demo("creating Notion page", "data_source_id", request.DataSourceID, "properties", propertyNames(request.Properties))
+	c.logger.DemoBelow("creating Notion page", "data_source_id", request.DataSourceID, "properties", propertyNames(request.Properties))
 	var page Page
 	if err := c.doJSON(ctx, http.MethodPost, "/pages", nil, body, &page); err != nil {
 		return Page{}, fmt.Errorf("create Notion page in data source %s: %w", request.DataSourceID, err)
 	}
-	c.logger.Demo("created Notion page", "data_source_id", request.DataSourceID, "page_id", page.ID)
+	c.logger.DemoAbove("created Notion page", "data_source_id", request.DataSourceID, "page_id", page.ID)
 	return page, nil
 }
 
@@ -408,13 +408,13 @@ func (c *Client) UpdatePageSelect(ctx context.Context, pageID string, request Up
 		},
 	}
 
-	c.logger.Demo("updating Notion select property", "page_id", pageID, "property", request.PropertyName, "select", request.SelectName)
+	c.logger.DemoBelow("updating Notion select property", "page_id", pageID, "property", request.PropertyName, "select", request.SelectName)
 	var page Page
 	path := fmt.Sprintf("/pages/%s", url.PathEscape(pageID))
 	if err := c.doJSON(ctx, http.MethodPatch, path, nil, body, &page); err != nil {
 		return Page{}, fmt.Errorf("update Notion page %s select property %q: %w", pageID, request.PropertyName, err)
 	}
-	c.logger.Demo("updated Notion select property", "page_id", pageID, "property", request.PropertyName, "select", request.SelectName)
+	c.logger.DemoAbove("updated Notion select property", "page_id", pageID, "property", request.PropertyName, "select", request.SelectName)
 	return page, nil
 }
 
@@ -423,13 +423,13 @@ func (c *Client) UpdatePageInTrash(ctx context.Context, pageID string, inTrash b
 		"in_trash": inTrash,
 	}
 
-	c.logger.Demo("updating Notion page trash status", "page_id", pageID, "in_trash", inTrash)
+	c.logger.DemoBelow("updating Notion page trash status", "page_id", pageID, "in_trash", inTrash)
 	var page Page
 	path := fmt.Sprintf("/pages/%s", url.PathEscape(pageID))
 	if err := c.doJSON(ctx, http.MethodPatch, path, nil, body, &page); err != nil {
 		return Page{}, fmt.Errorf("update Notion page %s trash status: %w", pageID, err)
 	}
-	c.logger.Demo("updated Notion page trash status", "page_id", pageID, "in_trash", inTrash)
+	c.logger.DemoAbove("updated Notion page trash status", "page_id", pageID, "in_trash", inTrash)
 	return page, nil
 }
 
@@ -470,7 +470,7 @@ func (c *Client) doJSON(ctx context.Context, method, path string, query url.Valu
 			return err
 		}
 
-		c.logger.Demo("calling Notion API", "method", method, "path", path, "attempt", attempt+1)
+		c.logger.DemoBelow("calling Notion API", "method", method, "path", path, "attempt", attempt+1)
 		resp, err := c.httpClient.Do(req)
 		if err != nil {
 			c.recordCallEnd()
@@ -479,7 +479,7 @@ func (c *Client) doJSON(ctx context.Context, method, path string, query url.Valu
 
 		if resp.StatusCode == http.StatusTooManyRequests && attempt == 0 {
 			retryAfter := parseRetryAfter(resp.Header.Get("Retry-After"))
-			c.logger.Demo("Notion API asked client to slow down", "method", method, "path", path, "retry_after", retryAfter.String())
+			c.logger.DemoSurrounding("Notion API asked client to slow down", "method", method, "path", path, "retry_after", retryAfter.String())
 			io.Copy(io.Discard, resp.Body)
 			resp.Body.Close()
 			c.recordCallEnd()
@@ -498,7 +498,7 @@ func (c *Client) doJSON(ctx context.Context, method, path string, query url.Valu
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 			return fmt.Errorf("unexpected Notion status %s: %s", resp.Status, string(responseBytes))
 		}
-		c.logger.Demo("Notion API call succeeded", "method", method, "path", path, "status", resp.StatusCode, "response_bytes", len(responseBytes))
+		c.logger.DemoAbove("Notion API call succeeded", "method", method, "path", path, "status", resp.StatusCode, "response_bytes", len(responseBytes))
 		if responseBody == nil {
 			return nil
 		}
@@ -523,7 +523,7 @@ func (c *Client) waitForRateLimit(ctx context.Context) error {
 	if wait <= 0 {
 		return nil
 	}
-	c.logger.Demo("waiting before Notion API call to respect rate limit", "wait", wait.String())
+	c.logger.DemoBelow("waiting before Notion API call to respect rate limit", "wait", wait.String())
 	return sleepContext(ctx, wait)
 }
 

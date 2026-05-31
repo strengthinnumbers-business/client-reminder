@@ -112,7 +112,7 @@ func WithLogger(logger ports.Logger) Option {
 
 func (c *HolidayChecker) IsHoliday(date time.Time, region entities.ClientRegion) (bool, error) {
 	normalized := normalizeDate(date)
-	c.logger.Demo("checking business-day holiday calendar", "date", normalized.Format(time.DateOnly), "region", region)
+	c.logger.DemoBelow("checking business-day holiday calendar", "date", normalized.Format(time.DateOnly), "region", region)
 
 	holidays, err := c.holidaysForYear(region, normalized.Year())
 	if err != nil {
@@ -120,7 +120,7 @@ func (c *HolidayChecker) IsHoliday(date time.Time, region entities.ClientRegion)
 	}
 
 	_, ok := holidays[normalized.Format(time.DateOnly)]
-	c.logger.Demo("checked business-day holiday calendar", "date", normalized.Format(time.DateOnly), "region", region, "is_holiday", ok)
+	c.logger.DemoAbove("checked business-day holiday calendar", "date", normalized.Format(time.DateOnly), "region", region, "is_holiday", ok)
 	return ok, nil
 }
 
@@ -131,11 +131,11 @@ func (c *HolidayChecker) holidaysForYear(region entities.ClientRegion, year int)
 	if cached, ok, err := c.loadCache(region, year); err != nil {
 		return nil, err
 	} else if ok {
-		c.logger.Demo("using cached holiday calendar", "region", region, "year", year, "holidays", len(cached))
+		c.logger.DemoSurrounding("using cached holiday calendar", "region", region, "year", year, "holidays", len(cached))
 		return cached, nil
 	}
 
-	c.logger.Demo("fetching holiday calendar", "region", region, "year", year)
+	c.logger.DemoBelow("fetching holiday calendar", "region", region, "year", year)
 	fresh, err := c.fetchProvinceHolidays(region, year)
 	if err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ func (c *HolidayChecker) holidaysForYear(region entities.ClientRegion, year int)
 		return nil, err
 	}
 
-	c.logger.Demo("loaded fresh holiday calendar", "region", region, "year", year, "holidays", len(fresh))
+	c.logger.DemoAbove("loaded fresh holiday calendar", "region", region, "year", year, "holidays", len(fresh))
 	return fresh, nil
 }
 
@@ -170,7 +170,7 @@ func (c *HolidayChecker) fetchProvinceHolidays(region entities.ClientRegion, yea
 		return nil, fmt.Errorf("fetch holidays for %s %d: %w", region, year, err)
 	}
 	defer resp.Body.Close()
-	c.logger.Demo("holiday API responded", "region", region, "year", year, "status", resp.Status)
+	c.logger.DemoAbove("holiday API responded", "region", region, "year", year, "status", resp.Status)
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("fetch holidays for %s %d: unexpected status %s", region, year, resp.Status)
@@ -203,7 +203,7 @@ func (c *HolidayChecker) loadCache(region entities.ClientRegion, year int) (map[
 	bytes, err := os.ReadFile(c.cachePath(region, year))
 	if err != nil {
 		if os.IsNotExist(err) {
-			c.logger.Demo("holiday cache miss", "region", region, "year", year, "path", c.cachePath(region, year))
+			c.logger.DemoSurrounding("holiday cache miss", "region", region, "year", year, "path", c.cachePath(region, year))
 			return nil, false, nil
 		}
 		return nil, false, fmt.Errorf("read holiday cache: %w", err)
@@ -215,7 +215,7 @@ func (c *HolidayChecker) loadCache(region entities.ClientRegion, year int) (map[
 	}
 
 	if c.clock().UTC().After(cached.FetchedAt.UTC().Add(c.cacheTTL)) {
-		c.logger.Demo("holiday cache expired", "region", region, "year", year, "path", c.cachePath(region, year), "fetched_at", cached.FetchedAt.Format(time.RFC3339))
+		c.logger.DemoSurrounding("holiday cache expired", "region", region, "year", year, "path", c.cachePath(region, year), "fetched_at", cached.FetchedAt.Format(time.RFC3339))
 		return nil, false, nil
 	}
 
@@ -224,13 +224,13 @@ func (c *HolidayChecker) loadCache(region entities.ClientRegion, year int) (map[
 		holidays[date] = struct{}{}
 	}
 
-	c.logger.Demo("holiday cache hit", "region", region, "year", year, "path", c.cachePath(region, year), "holidays", len(holidays))
+	c.logger.DemoAbove("holiday cache hit", "region", region, "year", year, "path", c.cachePath(region, year), "holidays", len(holidays))
 	return holidays, true, nil
 }
 
 func (c *HolidayChecker) storeCache(region entities.ClientRegion, year int, holidays map[string]struct{}) error {
 	if c.cacheDir == "" {
-		c.logger.Demo("holiday cache disabled; not storing calendar", "region", region, "year", year)
+		c.logger.DemoSurrounding("holiday cache disabled; not storing calendar", "region", region, "year", year)
 		return nil
 	}
 
@@ -256,7 +256,7 @@ func (c *HolidayChecker) storeCache(region entities.ClientRegion, year int, holi
 	if err := os.WriteFile(c.cachePath(region, year), bytes, 0o644); err != nil {
 		return fmt.Errorf("write holiday cache: %w", err)
 	}
-	c.logger.Demo("stored holiday calendar in cache", "region", region, "year", year, "path", c.cachePath(region, year), "holidays", len(holidays))
+	c.logger.DemoAbove("stored holiday calendar in cache", "region", region, "year", year, "path", c.cachePath(region, year), "holidays", len(holidays))
 
 	return nil
 }

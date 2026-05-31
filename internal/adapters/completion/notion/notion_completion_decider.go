@@ -94,7 +94,7 @@ func (d *CompletionDecider) GetVerdict(c entities.Client, p entities.Period) (en
 
 	records := d.records[stateKey(c.ID, p.ID)]
 	if len(records) == 0 {
-		d.logger.Demo("no Notion upload review task found", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "verdict", "not_requested")
+		d.logger.DemoSurrounding("no Notion upload review task found", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "verdict", "not_requested")
 		return entities.CompletionVerdictTask{Status: entities.CompletionVerdictNotRequested}, nil
 	}
 	if len(records) > 1 {
@@ -102,7 +102,7 @@ func (d *CompletionDecider) GetVerdict(c entities.Client, p entities.Period) (en
 	}
 
 	task := records[0].task
-	d.logger.Demo("matched Notion upload review task", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "task_page_id", task.ID, "verdict", verdictName(task.Status))
+	d.logger.DemoAbove("matched Notion upload review task", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "task_page_id", task.ID, "verdict", verdictName(task.Status))
 	return task, nil
 }
 
@@ -117,7 +117,7 @@ func (d *CompletionDecider) RequestNewCompletionVerdict(c entities.Client, p ent
 
 	key := stateKey(c.ID, p.ID)
 	for _, record := range d.records[key] {
-		d.logger.Demo("trashing existing Notion upload review task", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "task_page_id", record.task.ID)
+		d.logger.DemoBelow("trashing existing Notion upload review task", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "task_page_id", record.task.ID)
 		if _, err := d.api.UpdatePageInTrash(ctx, record.task.ID, true); err != nil {
 			return entities.CompletionVerdictTask{}, fmt.Errorf("trash Notion completion task for client %s period %s page %s: %w", c.ID, p.ID, record.task.ID, err)
 		}
@@ -128,14 +128,14 @@ func (d *CompletionDecider) RequestNewCompletionVerdict(c entities.Client, p ent
 		return entities.CompletionVerdictTask{}, err
 	}
 
-	d.logger.Demo("creating new Notion upload review task", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "data_source_id", dataSourceID)
+	d.logger.DemoBelow("creating new Notion upload review task", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "data_source_id", dataSourceID)
 	page, err := d.api.CreatePage(ctx, notionapi.CreatePageRequest{
 		DataSourceID: dataSourceID,
 		Properties: notionapi.PagePropertyUpdates{
 			d.fields.Title:          notionapi.TitleProperty(completionTaskTitle(c, p)),
 			d.fields.PeriodKey:      notionapi.RichTextProperty(p.ID),
 			d.fields.ReminderClient: notionapi.RelationProperty(c.ID),
-			d.fields.Status:         notionapi.SelectProperty("undecided"),
+			d.fields.Status:         notionapi.SelectProperty("unset"),
 			d.fields.ChangesSummary: notionapi.RichTextProperty(changesSummary),
 			d.fields.VerdictReason:  notionapi.RichTextProperty(""),
 		},
@@ -150,13 +150,13 @@ func (d *CompletionDecider) RequestNewCompletionVerdict(c entities.Client, p ent
 		ChangesSummary: changesSummary,
 	}
 	d.records[key] = []verdictRecord{{task: task}}
-	d.logger.Demo("created new Notion upload review task", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "task_page_id", task.ID, "verdict", "not_requested")
+	d.logger.DemoAbove("created new Notion upload review task", "client_id", c.ID, "client_name", c.Name, "period", p.ID, "task_page_id", task.ID, "verdict", "not_requested")
 	return task, nil
 }
 
 func (d *CompletionDecider) ensureLoaded(ctx context.Context) error {
 	if d.loaded {
-		d.logger.Demo("using cached Notion upload review task snapshot", "records", len(d.records))
+		d.logger.DemoSurrounding("using cached Notion upload review task snapshot", "records", len(d.records))
 		return nil
 	}
 
@@ -165,14 +165,14 @@ func (d *CompletionDecider) ensureLoaded(ctx context.Context) error {
 		return err
 	}
 
-	d.logger.Demo("querying upload review tasks from Notion", "data_source_id", dataSourceID)
+	d.logger.DemoBelow("querying upload review tasks from Notion", "data_source_id", dataSourceID)
 	pages, err := d.api.QueryDataSource(ctx, dataSourceID, notionapi.QueryDataSourceRequest{
 		FilterProperties: d.fields.filterProperties(),
 	})
 	if err != nil {
 		return fmt.Errorf("query Notion completion tasks: %w", err)
 	}
-	d.logger.Demo("Notion returned upload review task pages", "data_source_id", dataSourceID, "count", len(pages))
+	d.logger.DemoAbove("Notion returned upload review task pages", "data_source_id", dataSourceID, "count", len(pages))
 
 	records, err := d.recordsFromPages(pages)
 	if err != nil {
@@ -181,25 +181,25 @@ func (d *CompletionDecider) ensureLoaded(ctx context.Context) error {
 
 	d.records = records
 	d.loaded = true
-	d.logger.Demo("cached upload review task snapshot for this run", "records", len(records))
+	d.logger.DemoAbove("cached upload review task snapshot for this run", "records", len(records))
 	return nil
 }
 
 func (d *CompletionDecider) resolveDataSourceID(ctx context.Context) (string, error) {
 	if d.dataSourceID != "" {
-		d.logger.Demo("using configured Notion upload review task data source", "data_source_id", d.dataSourceID)
+		d.logger.DemoSurrounding("using configured Notion upload review task data source", "data_source_id", d.dataSourceID)
 		return d.dataSourceID, nil
 	}
 	if d.dataSourceName == "" {
 		return "", fmt.Errorf("Notion completion data source ID or name is required")
 	}
-	d.logger.Demo("resolving Notion upload review task data source by title", "title", d.dataSourceName)
+	d.logger.DemoBelow("resolving Notion upload review task data source by title", "title", d.dataSourceName)
 	id, err := d.api.FindDataSourceIDByTitle(ctx, d.dataSourceName)
 	if err != nil {
 		return "", fmt.Errorf("resolve Notion completion data source %q: %w", d.dataSourceName, err)
 	}
 	d.dataSourceID = id
-	d.logger.Demo("resolved Notion upload review task data source", "title", d.dataSourceName, "data_source_id", id)
+	d.logger.DemoAbove("resolved Notion upload review task data source", "title", d.dataSourceName, "data_source_id", id)
 	return id, nil
 }
 
@@ -229,7 +229,7 @@ func (d *CompletionDecider) recordsFromPages(pages []notionapi.Page) (verdictMap
 			VerdictReason:  page.Properties.Text(d.fields.VerdictReason),
 		}
 		records[key] = append(records[key], verdictRecord{task: task})
-		d.logger.Demo("mapped Notion upload review task page", "page_id", page.ID, "client_id", clientID, "period", periodKey, "status", page.Properties.Text(d.fields.Status), "verdict", verdictName(verdict))
+		d.logger.DemoAbove("mapped Notion upload review task page", "page_id", page.ID, "client_id", clientID, "period", periodKey, "status", page.Properties.Text(d.fields.Status), "verdict", verdictName(verdict))
 	}
 	return records, nil
 }

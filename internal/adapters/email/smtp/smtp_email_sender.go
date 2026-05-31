@@ -40,7 +40,7 @@ func WithLogger(logger ports.Logger) Option {
 
 func (s *EmailSender) SendEmail(email, subjectLine, textBody string) error {
 	addr := fmt.Sprintf("%s:%s", s.host, s.port)
-	s.logger.Demo("sending SMTP email", "smtp_host", s.host, "smtp_port", s.port, "from", s.from, "to", email, "subject", subjectLine, "body_bytes", len(textBody))
+	s.logger.DemoBelow("sending SMTP email", "smtp_host", s.host, "smtp_port", s.port, "from", s.from, "to", email, "subject", subjectLine, "body_bytes", len(textBody))
 	message := strings.Join([]string{
 		fmt.Sprintf("From: %s", s.from),
 		fmt.Sprintf("To: %s", email),
@@ -55,6 +55,6 @@ func (s *EmailSender) SendEmail(email, subjectLine, textBody string) error {
 		return fmt.Errorf("send smtp mail: %w", err)
 	}
 
-	s.logger.Demo("sent SMTP email", "smtp_host", s.host, "smtp_port", s.port, "from", s.from, "to", email, "subject", subjectLine)
+	s.logger.DemoAbove("sent SMTP email", "smtp_host", s.host, "smtp_port", s.port, "from", s.from, "to", email, "subject", subjectLine)
 	return nil
 }

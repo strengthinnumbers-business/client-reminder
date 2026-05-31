@@ -2,6 +2,7 @@ package slog
 
 import (
 	"bytes"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -34,5 +35,29 @@ func TestNewTextAllowsDebugLevel(t *testing.T) {
 
 	if !strings.Contains(output.String(), "debug message") {
 		t.Fatalf("expected debug logs to be written, got %q", output.String())
+	}
+}
+
+func TestDemoMethodsEmitSourceMapKeyOnly(t *testing.T) {
+	var output bytes.Buffer
+	logger := NewText(&output, LevelDemo)
+
+	logger.DemoBelow("below message", "client_id", "abc")
+	logger.DemoAbove("above message", "count", 2)
+	logger.DemoSurrounding("surrounding message", "period", "2026-05")
+
+	logs := output.String()
+	for _, message := range []string{"below message", "above message", "surrounding message"} {
+		if !strings.Contains(logs, message) {
+			t.Fatalf("expected demo message %q in logs %q", message, logs)
+		}
+	}
+	if !regexp.MustCompile(`source_map_key=[a-f0-9]{12}`).MatchString(logs) {
+		t.Fatalf("expected short source_map_key in logs %q", logs)
+	}
+	for _, forbidden := range []string{"source_file", "source_line", "source_function", "source_message"} {
+		if strings.Contains(logs, forbidden) {
+			t.Fatalf("did not expect %s in logs %q", forbidden, logs)
+		}
 	}
 }

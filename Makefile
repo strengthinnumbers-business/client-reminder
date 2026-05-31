@@ -9,6 +9,10 @@ endif
 test:
 	go test ./internal/...
 
+.PHONY: demo-clean-code
+demo-clean-code:
+	go run ./cmd/demo-codegen
+
 
 ##############################################################################
 # The following targets are for testing the "lower-level" Notion API client. #

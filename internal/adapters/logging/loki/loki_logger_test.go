@@ -58,3 +58,30 @@ func TestLoggerFiltersBelowMinimumLevel(t *testing.T) {
 		t.Fatalf("expected one Loki request, got %d", requests)
 	}
 }
+
+func TestDemoMethodsIncludeSourceMapKeyOnly(t *testing.T) {
+	var got pushRequest
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer server.Close()
+
+	logger := New(server.URL, LevelDemo)
+	logger.DemoBelow("demo below", "client_id", "abc")
+
+	var line map[string]any
+	if err := json.Unmarshal([]byte(got.Streams[0].Values[0][1]), &line); err != nil {
+		t.Fatalf("decode log line: %v", err)
+	}
+	if line["source_map_key"] == "" {
+		t.Fatalf("expected source_map_key in %#v", line)
+	}
+	for _, forbidden := range []string{"source_file", "source_line", "source_function", "source_message"} {
+		if _, ok := line[forbidden]; ok {
+			t.Fatalf("did not expect %s in %#v", forbidden, line)
+		}
+	}
+}

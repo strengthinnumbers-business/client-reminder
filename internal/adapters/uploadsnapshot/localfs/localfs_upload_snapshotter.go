@@ -143,7 +143,7 @@ func (s *UploadSnapshotter) currentSnapshot() (entities.UploadSnapshot, error) {
 		return nil, fmt.Errorf("walk upload snapshot root: %w", err)
 	}
 
-	s.logger.Demo("created upload snapshot", "upload_dir", root, "files", len(snapshot))
+	s.logger.DemoAbove("created upload snapshot", "upload_dir", root, "files", len(snapshot))
 	return snapshot, nil
 }
 
@@ -175,7 +175,7 @@ func (s *UploadSnapshotter) readSnapshot(path string) (entities.UploadSnapshot, 
 		snapshot = entities.UploadSnapshot{}
 	}
 
-	s.logger.Demo("loaded previous upload snapshot", "path", path, "files", len(snapshot))
+	s.logger.DemoAbove("loaded previous upload snapshot", "path", path, "files", len(snapshot))
 	return snapshot, nil
 }
 
@@ -193,7 +193,7 @@ func (s *UploadSnapshotter) storeSnapshot(snapshot entities.UploadSnapshot) erro
 	if err := os.WriteFile(path, bytes, 0o644); err != nil {
 		return fmt.Errorf("write upload snapshot: %w", err)
 	}
-	s.logger.Demo("stored upload snapshot", "path", path, "files", len(snapshot))
+	s.logger.DemoAbove("stored upload snapshot", "path", path, "files", len(snapshot))
 	return nil
 }
 
