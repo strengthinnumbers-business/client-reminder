@@ -31,6 +31,30 @@ type Period struct {
 	ID   string
 }
 
+func (p Period) Name() string {
+	switch p.Type {
+	case PeriodWeekly:
+		var year, isoWeek int
+		if _, err := fmt.Sscanf(p.ID, "%d-W%02d", &year, &isoWeek); err == nil && p.ID == fmt.Sprintf("%d-W%02d", year, isoWeek) {
+			startYear, startWeek := isoWeekStart(year, isoWeek).ISOWeek()
+			if startYear == year && startWeek == isoWeek {
+				return fmt.Sprintf("Week %d of %d", isoWeek, year)
+			}
+		}
+	case PeriodMonthly:
+		if start, err := time.Parse("2006-01", p.ID); err == nil {
+			return fmt.Sprintf("%s %d", start.Month(), start.Year())
+		}
+	case PeriodQuarterly:
+		var year, quarter int
+		if _, err := fmt.Sscanf(p.ID, "%d-Q%d", &year, &quarter); err == nil && quarter >= 1 && quarter <= 4 && p.ID == fmt.Sprintf("%d-Q%d", year, quarter) {
+			return fmt.Sprintf("Q%d %d", quarter, year)
+		}
+	}
+
+	return ""
+}
+
 func (p Period) Start() time.Time {
 	switch p.Type {
 	case PeriodWeekly:

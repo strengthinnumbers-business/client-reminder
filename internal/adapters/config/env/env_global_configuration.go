@@ -35,7 +35,7 @@ func (c *GlobalConfiguration) GetEmailBodyTemplate(sequenceIndex int, style stri
 
 	subject := os.Getenv("EMAIL_SUBJECT_TEMPLATE")
 	if subject == "" {
-		subject = "Reminder to upload your data"
+		subject = "Reminder to upload your data for {{PreviousPeriodName}}"
 		c.logger.DemoSurrounding("using default email subject template", "subject", subject)
 	} else {
 		c.logger.DemoSurrounding("using email subject template from environment", "subject", subject)

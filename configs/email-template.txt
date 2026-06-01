@@ -1,13 +1,16 @@
-{{Greeting}}
+{{Greeting}},
 
-This is your reminder to upload the following data for period {{PeriodID}}:
+Just a quick reminder to upload the following statements
+for {{PreviousPeriodName}} into your shared folder
+
+{{FolderURL}}
+
+What to upload:
 
 {{UploadPrompt}}
 
-Please upload into this shared folder: {{FolderURL}}
-
-Thanks,
+Thank you,
 The Upload Reminder Bot for
 Strength In Numbers
 
-Run date: {{RunDate}}
+Bot run date: {{RunDate}}

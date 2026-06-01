@@ -294,6 +294,8 @@ func RenderEmailTemplate(template string, client entities.Client, period entitie
 		"{{FolderURL}}", client.FolderURL,
 		"{{UploadPrompt}}", client.UploadPrompt,
 		"{{PeriodID}}", period.ID,
+		"{{PeriodName}}", period.Name(),
+		"{{PreviousPeriodName}}", period.Previous().Name(),
 		"{{RunDate}}", now.Format("2006-01-02"),
 	)
 	return replacer.Replace(template)
