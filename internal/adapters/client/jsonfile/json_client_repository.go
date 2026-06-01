@@ -46,6 +46,9 @@ func (r *ClientRepository) GetAllClients() ([]entities.Client, error) {
 		if len(clients[i].ReminderGaps) == 0 {
 			clients[i].ReminderGaps = entities.ReminderGapsStandard
 		}
+		if len(clients[i].Emails) == 0 {
+			return nil, fmt.Errorf("client %s has no email recipients", clients[i].ID)
+		}
 	}
 
 	return clients, nil

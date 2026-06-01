@@ -3,6 +3,7 @@ package notion
 import (
 	"context"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/strengthinnumbers-business/client-reminder/internal/adapters/notionapi"
@@ -21,7 +22,7 @@ func TestClientRepositoryQueriesOnlyActiveClientsAndMapsFields(t *testing.T) {
 					"Period Type":     selectProperty("monthly"),
 					"Schedule Preset": selectProperty("standard"),
 					"Region":          selectProperty("AB"),
-					"Contact Email":   emailProperty("ops@acme.example"),
+					"Contact Emails":  richTextProperty(" ops@acme.example,\n finance@acme.example \n,\n"),
 					"Email Style":     selectProperty("standard"),
 					"Greeting":        richTextProperty("Hello Acme Team,"),
 					"Folder URL":      urlProperty("https://files.example.com/acme"),
@@ -54,7 +55,7 @@ func TestClientRepositoryQueriesOnlyActiveClientsAndMapsFields(t *testing.T) {
 		"Period Type",
 		"Schedule Preset",
 		"Region",
-		"Contact Email",
+		"Contact Emails",
 		"Email Style",
 		"Greeting",
 		"Folder URL",
@@ -73,7 +74,7 @@ func TestClientRepositoryQueriesOnlyActiveClientsAndMapsFields(t *testing.T) {
 			PeriodType:   entities.PeriodMonthly,
 			ReminderGaps: entities.MinimumBusinessDayGaps{0, 2, 2},
 			Region:       entities.RegionAlberta,
-			Email:        "ops@acme.example",
+			Emails:       []string{"ops@acme.example", "finance@acme.example"},
 			EmailStyle:   "standard",
 			Greeting:     "Hello Acme Team,",
 			FolderURL:    "https://files.example.com/acme",
@@ -86,6 +87,26 @@ func TestClientRepositoryQueriesOnlyActiveClientsAndMapsFields(t *testing.T) {
 	}
 }
 
+func TestClientRepositoryRejectsClientWithoutContactEmails(t *testing.T) {
+	api := &fakeAPI{
+		pages: []notionapi.Page{
+			{
+				ID: "page-1",
+				Properties: notionapi.Properties{
+					"Name":           titleProperty("Acme Corp"),
+					"Period Type":    selectProperty("monthly"),
+					"Contact Emails": richTextProperty(" , \n "),
+				},
+			},
+		},
+	}
+
+	_, err := New(api, "ds-1", FieldMapping{}).GetAllClients()
+	if err == nil || !strings.Contains(err.Error(), "Contact Emails: no email recipients") {
+		t.Fatalf("expected missing recipients error, got %v", err)
+	}
+}
+
 func TestClientRepositoryResolvesDataSourceNameAndDefaultsReminderGaps(t *testing.T) {
 	api := &fakeAPI{
 		dataSourceID: "resolved-ds",
@@ -93,8 +114,9 @@ func TestClientRepositoryResolvesDataSourceNameAndDefaultsReminderGaps(t *testin
 			{
 				ID: "page-1",
 				Properties: notionapi.Properties{
-					"Name":        titleProperty("Acme Corp"),
-					"Period Type": numberProperty(2),
+					"Name":           titleProperty("Acme Corp"),
+					"Period Type":    numberProperty(2),
+					"Contact Emails": richTextProperty("ops@acme.example"),
 				},
 			},
 		},

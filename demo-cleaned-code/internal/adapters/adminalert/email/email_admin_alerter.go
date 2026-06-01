@@ -42,7 +42,7 @@ func (a *AdminAlerter) AlertMissedPeriod(client entities.Client, period entities
 		period.ID,
 		reason,
 	)
-	if err := a.emailSender.SendEmail(a.adminEmail, "Client reminder missed a whole period", body); err != nil {
+	if err := a.emailSender.SendEmail([]string{a.adminEmail}, "Client reminder missed a whole period", body); err != nil {
 		return err
 	}
 	return nil

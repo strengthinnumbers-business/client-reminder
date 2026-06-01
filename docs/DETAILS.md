@@ -98,6 +98,18 @@ Optional production settings:
 - `EMAIL_BODY_TEMPLATE` can be used instead of `EMAIL_TEMPLATE_PATH`.
 - `LOG_LEVEL` accepts `demo`, `debug`, `info`, or `error`.
 
+Client reminder recipients are configured as an `Emails` JSON array. Each
+array item is one address. The production JSON adapter preserves those values
+exactly and rejects an empty array.
+
+The Notion-backed demo reads recipients from the `Contact Emails` property.
+That text-like property accepts addresses separated by commas, newlines, or
+both. Surrounding whitespace and blank entries are removed.
+
+Each client reminder is sent as one SMTP transaction addressed to all of the
+client's configured `To` recipients. A successful transaction advances the
+client's reminder sequence once.
+
 ## Email Template
 
 The default template is `configs/email-template.txt`. It can use fields from each client and the current run, including:

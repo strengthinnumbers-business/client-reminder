@@ -43,7 +43,7 @@ type Client struct {
 	PeriodType   PeriodType
 	ReminderGaps MinimumBusinessDayGaps
 	Region       ClientRegion
-	Email        string
+	Emails       []string
 	EmailStyle   string
 	Greeting     string
 	FolderURL    string

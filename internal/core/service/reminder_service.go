@@ -107,7 +107,7 @@ func (s *ReminderService) Run(ctx context.Context) (RunResult, error) {
 
 	for _, client := range clients {
 		currentPeriod := entities.CurrentPeriod(client.PeriodType, now)
-		s.logger.DemoSurrounding("evaluating client", "client_id", client.ID, "client_name", client.Name, "email", client.Email, "period_type", client.PeriodType.Name(), "current_period", currentPeriod.ID, "region", client.Region, "email_style", client.EmailStyle, "reminder_gaps", client.ReminderGaps.Effective())
+		s.logger.DemoSurrounding("evaluating client", "client_id", client.ID, "client_name", client.Name, "emails", client.Emails, "period_type", client.PeriodType.Name(), "current_period", currentPeriod.ID, "region", client.Region, "email_style", client.EmailStyle, "reminder_gaps", client.ReminderGaps.Effective())
 
 		changes := entities.DiffSnapshots(previousSnapshot.Filter(client.FolderPath), currentSnapshot.Filter(client.FolderPath))
 		if changes.Any() {
@@ -248,7 +248,7 @@ func (s *ReminderService) sendReminder(client entities.Client, eligibility entit
 
 	subjectLine := RenderEmailTemplate(subjectTemplate, client, eligibility.Period, now)
 	body := RenderEmailTemplate(bodyTemplate, client, eligibility.Period, now)
-	s.logger.DemoAbove("rendered reminder email", "client_id", client.ID, "period", eligibility.Period.ID, "to", client.Email, "subject", subjectLine, "body_bytes", len(body))
+	s.logger.DemoAbove("rendered reminder email", "client_id", client.ID, "period", eligibility.Period.ID, "to", client.Emails, "subject", subjectLine, "body_bytes", len(body))
 	entry := entities.SendLogEntry{
 		ClientID:      client.ID,
 		ForPeriod:     eligibility.Period,
@@ -258,8 +258,8 @@ func (s *ReminderService) sendReminder(client entities.Client, eligibility entit
 		Success:       true,
 	}
 
-	s.logger.DemoBelow("sending reminder email", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex, "to", client.Email, "subject", subjectLine)
-	if err := s.emailSender.SendEmail(client.Email, subjectLine, body); err != nil {
+	s.logger.DemoBelow("sending reminder email", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex, "to", client.Emails, "subject", subjectLine)
+	if err := s.emailSender.SendEmail(client.Emails, subjectLine, body); err != nil {
 		s.logger.Error("send reminder email", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex, "error", err)
 		entry.Success = false
 		entry.ErrorMessage = err.Error()

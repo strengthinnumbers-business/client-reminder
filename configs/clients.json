@@ -10,7 +10,10 @@
       2
     ],
     "Region": "AB",
-    "Email": "ops@acme.example",
+    "Emails": [
+      "ops@acme.example",
+      "finance@acme.example"
+    ],
     "EmailStyle": "standard",
     "Greeting": "Hello Acme Team,",
     "FolderURL": "https://files.example.com/acme",

@@ -57,6 +57,27 @@ func TestReminderServiceRun_SendsOnlyForCustomersReadyForReminder(t *testing.T) 
 	}
 }
 
+func TestReminderServiceRun_SendsOneReminderToAllClientEmailRecipients(t *testing.T) {
+	now := time.Date(2026, time.February, 2, 8, 0, 0, 0, time.UTC)
+	customer := testClient("c1")
+	customer.Emails = []string{"ops@example.com", "finance@example.com"}
+	emailSender := &emailmock.EmailSender{}
+
+	svc := newTestService(now, emailSender, &clientmock.ClientRepository{Clients: []entities.Client{customer}}, &completionmock.CompletionDecider{}, &sendmock.ReminderSendRepository{}, dealtWithPrevious([]entities.Client{customer}, now), &adminmock.AdminAlerter{})
+
+	result, err := svc.Run(context.Background())
+	if err != nil {
+		t.Fatalf("run returned error: %v", err)
+	}
+
+	if result.Sent != 1 || len(emailSender.Sent) != 1 {
+		t.Fatalf("expected one logical reminder, got result=%+v sent=%+v", result, emailSender.Sent)
+	}
+	if got, want := emailSender.Sent[0].To, customer.Emails; !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected reminder recipients: got %#v want %#v", got, want)
+	}
+}
+
 func TestReminderServiceRun_UsesActualPreviousSendForNextGap(t *testing.T) {
 	now := time.Date(2026, time.February, 9, 8, 0, 0, 0, time.UTC)
 	customer := testClient("c1")
@@ -390,7 +411,7 @@ func testClient(id string) entities.Client {
 		PeriodType:   entities.PeriodMonthly,
 		ReminderGaps: entities.MinimumBusinessDayGaps{0, 3, 2, 2},
 		Region:       entities.RegionOntario,
-		Email:        id + "@example.com",
+		Emails:       []string{id + "@example.com"},
 		EmailStyle:   "standard",
 		Greeting:     "Hello,",
 		FolderURL:    "https://files/" + id,

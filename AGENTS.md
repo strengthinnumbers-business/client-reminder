@@ -38,5 +38,5 @@
 - Shared sparse Notion API code lives in `internal/adapters/notionapi`; reuse it instead of duplicating Notion request/response mapping in higher-level adapters.
 - The Notion API client uses internal-connection tokens from `NOTION_API_KEY`, Notion-Version `2026-03-11`, a default 333 ms gap between requests, and one retry for 429 responses.
 - Use `notionapi.Properties.Text(name)` for common Notion text-like extraction; only add page-property-item support if multi-value people/relation pagination becomes required.
-- Notion client configuration maps active Notion pages to core `entities.Client`; default field names include `Contact Email`, `Period Type`, `Schedule Preset`, and `Status`, and queries filter `Status` to `active`.
+- Notion client configuration maps active Notion pages to core `entities.Client`; default field names include `Contact Emails`, `Period Type`, `Schedule Preset`, and `Status`, and queries filter `Status` to `active`.
 - Notion completion maps task `Status` values `unset`, `undecided`, `upload_incomplete`, and `upload_complete`; it caches the queried task snapshot once per app run and resets incomplete tasks to `unset` with `UpdatePageSelect`.

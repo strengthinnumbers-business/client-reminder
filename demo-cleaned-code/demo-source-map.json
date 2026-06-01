@@ -29,6 +29,16 @@
     "clean_line": 131,
     "clean_column": 9
   },
+  "0d56964d1577": {
+    "message": "sending SMTP email",
+    "source_path": "internal/adapters/email/smtp/smtp_email_sender.go",
+    "source_line": 52,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/email/smtp.(*EmailSender).SendEmail",
+    "target_mode": "below",
+    "clean_path": "demo-cleaned-code/internal/adapters/email/smtp/smtp_email_sender.go",
+    "clean_line": 52,
+    "clean_column": 2
+  },
   "0e8378231877": {
     "message": "sending admin missed-period alert",
     "source_path": "internal/adapters/adminalert/email/email_admin_alerter.go",
@@ -47,16 +57,6 @@
     "target_mode": "above",
     "clean_path": "demo-cleaned-code/internal/adapters/notionapi/client.go",
     "clean_line": 418,
-    "clean_column": 2
-  },
-  "1436740b3928": {
-    "message": "sent SMTP email",
-    "source_path": "internal/adapters/email/smtp/smtp_email_sender.go",
-    "source_line": 58,
-    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/email/smtp.(*EmailSender).SendEmail",
-    "target_mode": "above",
-    "clean_path": "demo-cleaned-code/internal/adapters/email/smtp/smtp_email_sender.go",
-    "clean_line": 53,
     "clean_column": 2
   },
   "14fd6871f418": {
@@ -339,16 +339,6 @@
     "clean_line": 120,
     "clean_column": 2
   },
-  "543a9dc1a3d5": {
-    "message": "sending SMTP email",
-    "source_path": "internal/adapters/email/smtp/smtp_email_sender.go",
-    "source_line": 43,
-    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/email/smtp.(*EmailSender).SendEmail",
-    "target_mode": "below",
-    "clean_path": "demo-cleaned-code/internal/adapters/email/smtp/smtp_email_sender.go",
-    "clean_line": 43,
-    "clean_column": 2
-  },
   "57893acf494a": {
     "message": "loaded email body template from environment",
     "source_path": "internal/adapters/config/env/env_global_configuration.go",
@@ -477,6 +467,16 @@
     "target_mode": "below",
     "clean_path": "demo-cleaned-code/internal/adapters/config/env/env_global_configuration.go",
     "clean_line": 35,
+    "clean_column": 2
+  },
+  "88dad7d3ce31": {
+    "message": "sent SMTP email",
+    "source_path": "internal/adapters/email/smtp/smtp_email_sender.go",
+    "source_line": 67,
+    "source_function": "github.com/strengthinnumbers-business/client-reminder/internal/adapters/email/smtp.(*EmailSender).SendEmail",
+    "target_mode": "above",
+    "clean_path": "demo-cleaned-code/internal/adapters/email/smtp/smtp_email_sender.go",
+    "clean_line": 62,
     "clean_column": 2
   },
   "8bda74a0bf48": {

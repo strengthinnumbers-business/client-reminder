@@ -235,7 +235,7 @@ func (s *ReminderService) sendReminder(client entities.Client, eligibility entit
 		Success:       true,
 	}
 
-	if err := s.emailSender.SendEmail(client.Email, subjectLine, body); err != nil {
+	if err := s.emailSender.SendEmail(client.Emails, subjectLine, body); err != nil {
 		s.logger.Error("send reminder email", "client_id", client.ID, "period", eligibility.Period.ID, "sequence_index", eligibility.SequenceIndex, "error", err)
 		entry.Success = false
 		entry.ErrorMessage = err.Error()

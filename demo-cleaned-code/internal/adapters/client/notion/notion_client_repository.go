@@ -22,7 +22,7 @@ type FieldMapping struct {
 	PeriodType   string
 	ReminderGaps string
 	Region       string
-	Email        string
+	Emails       string
 	EmailStyle   string
 	Greeting     string
 	FolderURL    string
@@ -135,13 +135,18 @@ func (r *ClientRepository) clientFromPage(page notionapi.Page) (entities.Client,
 		gaps = entities.ReminderGapsStandard
 	}
 
+	emails := parseContactEmails(page.Properties.Text(r.fields.Emails))
+	if len(emails) == 0 {
+		return entities.Client{}, fmt.Errorf("%s: no email recipients", r.fields.Emails)
+	}
+
 	return entities.Client{
 		ID:           page.ID,
 		Name:         page.Properties.Text(r.fields.Name),
 		PeriodType:   periodType,
 		ReminderGaps: gaps,
 		Region:       entities.ClientRegion(page.Properties.Text(r.fields.Region)),
-		Email:        page.Properties.Text(r.fields.Email),
+		Emails:       emails,
 		EmailStyle:   page.Properties.Text(r.fields.EmailStyle),
 		Greeting:     page.Properties.Text(r.fields.Greeting),
 		FolderURL:    page.Properties.Text(r.fields.FolderURL),
@@ -166,8 +171,8 @@ func (m FieldMapping) withDefaults() FieldMapping {
 	if m.Region == "" {
 		m.Region = "Region"
 	}
-	if m.Email == "" {
-		m.Email = "Contact Email"
+	if m.Emails == "" {
+		m.Emails = "Contact Emails"
 	}
 	if m.EmailStyle == "" {
 		m.EmailStyle = "Email Style"
@@ -196,7 +201,7 @@ func (m FieldMapping) filterProperties() []string {
 		m.PeriodType,
 		m.ReminderGaps,
 		m.Region,
-		m.Email,
+		m.Emails,
 		m.EmailStyle,
 		m.Greeting,
 		m.FolderURL,
@@ -204,6 +209,19 @@ func (m FieldMapping) filterProperties() []string {
 		m.UploadPrompt,
 		m.Status,
 	}
+}
+
+func parseContactEmails(value string) []string {
+	parts := strings.FieldsFunc(value, func(r rune) bool {
+		return r == ',' || r == '\n'
+	})
+	emails := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if email := strings.TrimSpace(part); email != "" {
+			emails = append(emails, email)
+		}
+	}
+	return emails
 }
 
 func parsePeriodType(value string) (entities.PeriodType, error) {
